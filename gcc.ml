@@ -1,5 +1,5 @@
 type data = Int of int | Cons of data * data | Closure of int * frame
-and frame = { parent : frame; locals : data array }
+and frame = { parent : frame; locals : data array; mutable dummy : bool }
 
 type address = Ret of int * frame | Join of int | Stop
 
@@ -11,7 +11,7 @@ type machine = {
     }
 
 let init_machine () =
-    let rec fr = { parent = fr; locals = [||] } in
+    let rec fr = { parent = fr; locals = [||]; dummy = true } in
     let mac = { pc = 0; data = Stack.create (); 
     control = Stack.create (); frame = fr } in
     Stack.push Stop mac.control;
@@ -56,11 +56,16 @@ type instr =
     | SEL of int * int | JOIN
     | LDF of int | AP of int
     | RTN
+    | DUM of int | RAP of int
+    | STOP
 
 exception TagMismatch
 let intofpop mac = 
     match Stack.pop mac.data with
     Int x -> x | _ -> raise TagMismatch
+let consofpop mac =
+    match Stack.pop mac.data with
+    Cons (a,b) -> a, b | _ -> raise TagMismatch
 let closofpop mac =
     match Stack.pop mac.data with
     Closure (f,e) -> f, e | _ -> raise TagMismatch
@@ -73,7 +78,9 @@ let retofpop mac =
     match Stack.pop mac.control with
     Ret (x,f) -> x,f | _ -> raise ControlMismatch
 
+exception FrameMismatch
 exception MachineStop
+
 let eval mac instr =
     match instr with
     | LDC n -> 
@@ -123,6 +130,12 @@ let eval mac instr =
         let b = Stack.pop mac.data in 
         Stack.push (Cons (a,b)) mac.data;
         mac.pc <- mac.pc + 1
+    | CAR -> let a, b = consofpop mac in
+        Stack.push a mac.data;
+        mac.pc <- mac.pc + 1
+    | CDR -> let a, b = consofpop mac in
+        Stack.push b mac.data;
+        mac.pc <- mac.pc + 1
     | SEL(f,t) -> let x = intofpop mac in
         Stack.push (Join (mac.pc+1)) mac.control;
         mac.pc <- if x = 0 then f else t
@@ -132,7 +145,7 @@ let eval mac instr =
         Stack.push c mac.data;
         mac.pc <- mac.pc + 1
     | AP n -> let f, e = closofpop mac in
-        let fp = { parent = e; locals = Array.create n (Int 42) } in
+        let fp = { parent = e; locals = Array.create n (Int 42); dummy = false } in
         for i = n-1 downto 0 do
             fp.locals.(i) <- Stack.pop mac.data
         done;
@@ -148,13 +161,32 @@ let eval mac instr =
             mac.pc <- x
         | _ -> raise ControlMismatch
         end
+    | DUM n ->
+        let fp = { parent = mac.frame; locals = Array.create n (Int 42); dummy = true } in
+        mac.frame <- fp;
+        mac.pc <- mac.pc + 1
+    | RAP n ->
+        let f, fp = closofpop mac in
+        if not fp.dummy then raise FrameMismatch;
+        if Array.length fp.locals != n then raise FrameMismatch;
+        for i = n-1 downto 0 do
+            fp.locals.(i) <- Stack.pop mac.data
+        done;
+        Stack.push (Ret (mac.pc+1,fp.parent)) mac.control;
+        mac.frame <- fp;
+        mac.pc <- f
+    | STOP -> raise MachineStop
 
 let main =
     Printexc.record_backtrace true;
     try
-        let code = [| LDC 21; LDF 4; AP 1; RTN; LD (0,0); LD (0,0); ADD; RTN |] in
+        (* let code = [| LDC 21; LDF 4; AP 1; RTN; LD (0,0); LD (0,0); ADD; RTN |] in *)
+        let code = [| DUM 2; LDF 16; LDF 10; LDF 6; RAP 2; RTN;
+                LDC 1; LD (0,0); AP 1; RTN;
+                LD (0,0); LDC 1; SUB; LD (1,0); AP 1; RTN;
+                LD (0,0); LDC 1; ADD; LD (1,1); AP 1; RTN |] in
         let mac = init_machine () in
-        while true do
+        for i = 0 to 20 do
             let instr = code.(mac.pc) in
             eval mac instr;
             dump_machine mac
