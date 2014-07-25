@@ -17,7 +17,6 @@ let init_machine () =
     Stack.push Stop mac.control;
     mac
 
-
 let rec print_data d = match d with
     | Int n -> print_int n; print_string " "
     | Cons (a,b) -> print_string "(";
@@ -36,6 +35,12 @@ let print_address a = match a with
         print_string " "
     | Stop -> print_string "Stop"
 
+let rec print_frame f =
+    print_string "[ ";
+    Array.iter print_data f.locals;
+    print_string "]\n";
+    if f.parent != f then print_frame f.parent
+
 let dump_machine mac =
     Printf.printf "PC : %d\n" mac.pc;
     print_string "Data stack : ";
@@ -44,6 +49,8 @@ let dump_machine mac =
     print_string "Control stack : ";
     Stack.iter print_address mac.control;
     print_newline ();
+    print_string "Frames : ";
+    print_frame mac.frame;
     print_newline ()
 
 type instr = 
@@ -192,5 +199,5 @@ let main =
             dump_machine mac
         done
     with e ->
-        Printf.printf "Exception %s raised :\n" (Printexc.to_string e);
+        Printf.printf "Exception %s raised at %d:\n" (Printexc.to_string e);
         Printexc.print_backtrace stdout
