@@ -73,6 +73,7 @@ expr: a = expr PLUS b = expr { Add(a,b) }
     | a = expr LBRACKET b = INT RBRACKET { Tuple(a,b,2) }
     | a = expr DOT HD { Head a }
     | a = expr DOT TL { Tail a }
+    | RETURN a = expr { Chain(Print a, a) }
     | PRINT a = expr { Print a }
     | ATOM LPAREN a = expr RPAREN { Atom a }
     | LPAREN e = main_expr RPAREN { e }

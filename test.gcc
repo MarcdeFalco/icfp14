@@ -1,559 +1,906 @@
-Expanding location hit
-Expanding lambdaman hit
-Expanding world 
-Expanding location hit
-Expanding lambdaman hit
-Expanding world 
-Expanding lambdaman hit
-Expanding world 
-Expanding lambdaman hit
-Expanding world 
-Expanding lambdaman hit
-Expanding world 
-Expanding lambdaman hit
-Expanding world 
-Expanding lambdaman hit
-Expanding world 
-Expanding world 
-Expanding world 
-Expanding world 
-Expanding world 
-Expanding n 
-Expanding dir 
-Expanding map 
-Expanding x 
-Expanding y 
-Expanding right 
-Expanding map 
-Expanding x 
-Expanding y 
-Expanding left 
-Expanding map 
-Expanding x 
-Expanding y 
-Expanding down 
-Expanding map 
-Expanding x 
-Expanding y 
-Expanding up 
-Expanding x 
-Expanding y 
-Expanding dir 
-DUM 15
+DUM 29
 LDC 0
 LDC 1
 LDC 2
 LDC 3
-LDF 23
-LDF 39
-LDF 47
-LDF 86
-LDF 103
-LDF 107
-LDF 115
-LDF 158
-LDF 181
-LDF 199
-LDF 207
-LDF 19
-RAP 15
-RTN
-LDC 0
-LD 0 14
+LD 1 0
+CAR
+LD 1 0
+CDR
+CAR
+LD 1 0
+CDR
+CDR
+CAR
+LD 1 0
+CDR
+CDR
+CDR
+LDF 47; ->nth
+LDF 63; ->getCell
+LDF 71; ->advance
+LDF 110; ->getNextCell
+LDF 131; ->and
+LDF 135; ->or
+LDF 143; ->mod
+LDF 151; ->length
+LDF 174; ->isCrossing
+LDF 184; ->opp
+LDF 191; ->rot
+LDF 198; ->pill
+LDF 207; ->max3i
+LDF 233; ->max4i
+LDF 286; ->step
+LDF 536; ->dim
+LDF 545; ->valid
+LDF 564; ->countCone
+LDF 745; ->list_map
+LDF 762; ->listDir
+LDF 853; ->cacheDir
+LDF 41; ->body0
+TRAP 29
+LD 0 4
+LD 0 28
+AP 1
+LD 0 22
 CONS
 RTN
 LD 0 1
 LDC 0
 CEQ
-SEL 28 31
-RTN
+TSEL 51 54; ->then31,else31
 LD 0 0
 CAR
-JOIN
+RTN
 LD 0 0
 CDR
 LD 0 1
 LDC 1
 SUB
-LD 1 4
+LD 1 8
+TAP 2
+RTN
+RTN
+LD 0 0
+LD 0 2
+LD 1 8
 AP 2
-JOIN
-LD 0 0
-LD 0 2
-LD 1 4
-AP 2
 LD 0 1
-LD 1 4
-AP 2
+LD 1 8
+TAP 2
 RTN
 LD 0 2
 LD 1 0
 CEQ
-SEL 52 58
-RTN
+TSEL 75 81; ->then28,else28
 LD 0 0
 LD 0 1
 LDC 1
 SUB
 CONS
-JOIN
+RTN
 LD 0 2
 LD 1 3
 CEQ
-SEL 63 69
-JOIN
+TSEL 85 91; ->then29,else29
 LD 0 0
 LDC 1
 SUB
 LD 0 1
 CONS
-JOIN
+RTN
 LD 0 2
 LD 1 2
 CEQ
-SEL 74 80
-JOIN
+TSEL 95 101; ->then30,else30
 LD 0 0
 LD 0 1
 LDC 1
 ADD
 CONS
-JOIN
+RTN
 LD 0 0
 LDC 1
 ADD
 LD 0 1
 CONS
-JOIN
-DUM 1
+RTN
+RTN
+RTN
+RTN
+DUM 2
 LD 1 1
 LD 1 2
 LD 1 3
-LD 2 6
-AP 3
-LDF 95
-RAP 1
-RTN
-LD 1 0
-LD 0 0
-CAR
-LD 0 0
-CDR
-LD 2 5
-AP 3
-RTN
-LD 0 0
-LD 0 1
-MUL
-RTN
-LD 0 0
-LD 0 1
-ADD
-LD 0 0
-LD 0 1
-MUL
-SUB
-RTN
-DUM 1
-LD 1 0
-LD 1 1
-LD 1 2
-LD 2 0
-LD 2 7
-AP 4
-LDC 0
-CGT
-LD 1 0
-LD 1 1
-LD 1 2
-LD 2 2
-LD 2 7
-AP 4
-LDC 0
-CGT
-ADD
-LD 1 0
-LD 1 1
-LD 1 2
-LD 2 3
-LD 2 7
-AP 4
-LDC 0
-CGT
-ADD
-LD 1 0
-LD 1 1
-LD 1 2
-LD 2 1
-LD 2 7
-AP 4
-LDC 0
-CGT
-ADD
-LDF 154
-RAP 1
-RTN
-LD 0 0
-LDC 2
-CGT
-RTN
-LD 0 0
-LD 1 0
-CEQ
-SEL 163 165
-RTN
-LD 1 2
-JOIN
-LD 0 0
-LD 1 2
-CEQ
-SEL 170 172
-JOIN
-LD 1 0
-JOIN
-LD 0 0
-LD 1 3
-CEQ
-SEL 177 179
-JOIN
-LD 1 1
-JOIN
-LD 1 3
-JOIN
-DUM 1
-LD 1 0
-LD 1 1
-ADD
-LDF 188
-RAP 1
-RTN
-LD 0 0
-LDC 3
-CGT
-SEL 193 197
-RTN
-LD 0 0
-LDC 4
-SUB
-JOIN
-LD 0 0
-JOIN
-LD 0 0
-LDC 2
-CGTE
-LDC 3
-LD 0 0
-CGTE
-MUL
-RTN
-DUM 11
-LD 1 1
-CAR
-LD 1 1
-CDR
-CAR
-LD 1 1
-CDR
-CDR
-CAR
-LD 1 1
-CDR
-CDR
-CDR
-LD 1 1
-CDR
-CAR
-CAR
-LD 1 1
-CDR
-CAR
-CDR
-CAR
-LD 1 1
-CDR
-CAR
-CDR
-CDR
-CAR
-LD 1 1
-CDR
-CAR
-CDR
-CDR
-CDR
-CAR
-LD 1 1
-CDR
-CAR
-CDR
-CDR
-CDR
-CDR
-LD 1 1
-CDR
-CAR
-CDR
-CAR
-CAR
-LD 1 1
-CDR
-CAR
-CDR
-CAR
-CDR
-LDF 265
-RAP 11
-RTN
-LD 0 1
-LD 0 9
-LD 0 10
-LD 0 6
-CONS
-CONS
-CONS
-DBUG
-LD 0 0
-LD 0 9
-LD 0 10
 LD 2 10
 AP 3
-SEL 280 443
+CAR
+LD 1 1
+LD 1 2
+LD 1 3
+LD 2 10
+AP 3
+CDR
+LDF 125; ->body8
+TRAP 2
+LD 1 0
+LD 0 0
+LD 0 1
+LD 2 9
+TAP 3
+RTN
+LD 0 0
+LD 0 1
+MUL
+RTN
+LD 0 0
+LD 0 1
+ADD
+LD 0 0
+LD 0 1
+MUL
+SUB
+RTN
+LD 0 0
+LD 0 1
+LD 0 0
+LD 0 1
+DIV
+MUL
+SUB
+RTN
+DUM 1
+LDF 160; ->auxLength
+LDF 155; ->body7
+TRAP 1
+LD 1 0
+LDC 0
+LD 0 0
+TAP 2
+RTN
+LD 0 0
+ATOM
+TSEL 163 165; ->then27,else27
+LD 0 1
+RTN
+LD 0 0
+CDR
+LDC 1
+LD 0 1
+ADD
+LD 1 0
+TAP 2
+RTN
+RTN
+LD 0 0
+LD 0 1
+LD 0 2
+LD 1 9
+AP 3
+LD 1 15
+AP 1
+LDC 2
+CGT
+RTN
+LD 0 0
+LDC 2
+ADD
+LDC 4
+LD 1 14
+TAP 2
+RTN
+LD 0 0
+LD 0 1
+ADD
+LDC 4
+LD 1 14
+TAP 2
+RTN
+LD 0 0
+LDC 2
+CGTE
+LDC 3
+LD 0 0
+CGTE
+LD 1 12
+TAP 2
+RTN
+LD 0 0
+LD 0 1
+CGTE
+LD 0 0
+LD 0 2
+CGTE
+LD 1 12
+AP 2
+TSEL 216 218; ->then25,else25
+LDC 0
+RTN
+LD 0 1
+LD 0 0
+CGTE
+LD 0 1
+LD 0 2
+CGTE
+LD 1 12
+AP 2
+TSEL 227 229; ->then26,else26
+LDC 1
+RTN
+LDC 3
+RTN
+RTN
+RTN
+LD 0 0
+LD 0 1
+CGTE
+LD 0 0
+LD 0 2
+CGTE
+LD 0 0
+LD 0 3
+CGTE
+LD 1 12
+AP 2
+LD 1 12
+AP 2
+TSEL 247 249; ->then22,else22
+LDC 0
+RTN
+LD 0 1
+LD 0 0
+CGTE
+LD 0 1
+LD 0 2
+CGTE
+LD 0 1
+LD 0 3
+CGTE
+LD 1 12
+AP 2
+LD 1 12
+AP 2
+TSEL 263 265; ->then23,else23
+LDC 1
+RTN
+LD 0 2
+LD 0 0
+CGTE
+LD 0 2
+LD 0 1
+CGTE
+LD 0 2
+LD 0 3
+CGTE
+LD 1 12
+AP 2
+LD 1 12
+AP 2
+TSEL 279 281; ->then24,else24
+LDC 2
+RTN
+LDC 3
+RTN
+RTN
+RTN
+RTN
+DUM 12
+LD 1 1
+CAR
+LD 1 1
+CDR
+CAR
+LD 1 1
+CDR
+CDR
+CAR
+LD 1 1
+CDR
+CDR
+CDR
+LD 1 1
+CDR
+CAR
+CAR
+LD 1 1
+CDR
+CAR
+CDR
+CAR
+LD 1 1
+CDR
+CAR
+CDR
+CDR
+CAR
+LD 1 1
+CDR
+CAR
+CDR
+CDR
+CDR
+CAR
+LD 1 1
+CDR
+CAR
+CDR
+CDR
+CDR
+CDR
+LD 1 1
+CDR
+CAR
+CDR
+CAR
+CAR
+LD 1 1
+CDR
+CAR
+CDR
+CAR
+CDR
+LD 1 0
+LDF 344; ->body6
+TRAP 12
+LD 0 11
+LD 0 9
+LD 0 10
+LD 2 16
+AP 3
+TSEL 350 468; ->then14,else14
+LD 0 0
+LD 0 9
+LD 0 10
+LD 0 6
+LDC 0
+LD 2 18
+AP 2
+LD 2 11
+AP 4
+LD 2 19
+AP 1
+TSEL 362 369; ->then18,else18
+LD 1 0
+LD 0 6
+LDC 0
+LD 2 18
+AP 2
+CONS
+RTN
+LD 0 0
+LD 0 9
+LD 0 10
+LD 0 6
+LDC 1
+LD 2 18
+AP 2
+LD 2 11
+AP 4
+LD 2 19
+AP 1
+TSEL 381 388; ->then19,else19
+LD 1 0
+LD 0 6
+LDC 1
+LD 2 18
+AP 2
+CONS
+RTN
+LD 0 0
+LD 0 9
+LD 0 10
+LD 0 6
+LDC 2
+LD 2 18
+AP 2
+LD 2 11
+AP 4
+LD 2 19
+AP 1
+TSEL 400 407; ->then20,else20
+LD 1 0
+LD 0 6
+LDC 2
+LD 2 18
+AP 2
+CONS
+RTN
+LD 0 0
+LD 0 9
+LD 0 10
+LD 0 6
+LDC 3
+LD 2 18
+AP 2
+LD 2 11
+AP 4
+LD 2 19
+AP 1
+TSEL 419 426; ->then21,else21
+LD 1 0
+LD 0 6
+LDC 3
+LD 2 18
+AP 2
+CONS
+RTN
+LD 1 0
+LD 0 6
+LD 0 0
+LD 0 9
+LD 0 10
+LD 0 6
+LDC 0
+LD 2 18
+AP 2
+LDC 2
+LD 2 25
+AP 5
+LD 0 0
+LD 0 9
+LD 0 10
+LD 0 6
+LDC 1
+LD 2 18
+AP 2
+LDC 2
+LD 2 25
+AP 5
+LD 0 0
+LD 0 9
+LD 0 10
+LD 0 6
+LDC 3
+LD 2 18
+AP 2
+LDC 2
+LD 2 25
+AP 5
+LD 2 20
+AP 3
+LD 2 18
+AP 2
+CONS
+RTN
+RTN
+RTN
+RTN
 RTN
 LD 0 0
 LD 0 9
 LD 0 10
 LD 0 6
 LDC 0
-LD 2 12
+LD 2 18
 AP 2
-LD 2 7
+LD 2 11
 AP 4
-LD 2 13
+LDC 0
+CGT
+TSEL 480 487; ->then15,else15
+LD 1 0
+LD 0 6
+LDC 0
+LD 2 18
+AP 2
+CONS
+RTN
+LD 0 0
+LD 0 9
+LD 0 10
+LD 0 6
+LDC 1
+LD 2 18
+AP 2
+LD 2 11
+AP 4
+LDC 0
+CGT
+TSEL 499 506; ->then16,else16
+LD 1 0
+LD 0 6
+LDC 1
+LD 2 18
+AP 2
+CONS
+RTN
+LD 0 0
+LD 0 9
+LD 0 10
+LD 0 6
+LDC 3
+LD 2 18
+AP 2
+LD 2 11
+AP 4
+LDC 0
+CGT
+TSEL 518 525; ->then17,else17
+LD 1 0
+LD 0 6
+LDC 3
+LD 2 18
+AP 2
+CONS
+RTN
+LD 1 0
+LD 0 6
+LDC 2
+LD 2 18
+AP 2
+CONS
+RTN
+RTN
+RTN
+RTN
+RTN
+LD 0 0
+CAR
+LD 1 15
 AP 1
-SEL 293 302
-JOIN
-LD 1 0
-LDC 1
-ADD
-LD 0 6
-LDC 0
-LD 2 12
-AP 2
-CONS
-JOIN
 LD 0 0
-LD 0 9
-LD 0 10
-LD 0 6
-LDC 1
-LD 2 12
-AP 2
-LD 2 7
-AP 4
-LD 2 13
+LD 1 15
 AP 1
-SEL 315 324
-JOIN
-LD 1 0
-LDC 1
-ADD
-LD 0 6
-LDC 1
-LD 2 12
-AP 2
 CONS
-JOIN
+RTN
+LD 0 2
+LDC 0
+CGTE
 LD 0 0
-LD 0 9
-LD 0 10
-LD 0 6
-LDC 2
-LD 2 12
+LD 0 2
+CGT
+LD 0 3
+LDC 0
+CGTE
+LD 0 1
+LD 0 3
+CGT
+LD 1 12
 AP 2
-LD 2 7
-AP 4
-LD 2 13
+LD 1 12
+AP 2
+LD 1 12
+TAP 2
+RTN
+DUM 6
+LD 1 0
+LD 2 23
 AP 1
-SEL 337 346
-JOIN
+CAR
 LD 1 0
-LDC 1
-ADD
-LD 0 6
-LDC 2
-LD 2 12
-AP 2
-CONS
-JOIN
-LD 0 0
-LD 0 9
-LD 0 10
-LD 0 6
-LDC 3
-LD 2 12
-AP 2
-LD 2 7
-AP 4
-LD 2 13
+LD 2 23
 AP 1
-SEL 359 368
-JOIN
-LD 1 0
+CDR
+LD 1 3
 LDC 1
 ADD
-LD 0 6
+LDC 4
+LD 2 14
+AP 2
+LD 1 3
 LDC 3
-LD 2 12
+ADD
+LDC 4
+LD 2 14
 AP 2
-CONS
-JOIN
-LD 0 0
-LD 0 9
-LD 0 10
-LD 0 6
-LDC 0
-LD 2 12
-AP 2
-LD 2 7
+LDF 609; ->eval
+LDF 632; ->aux
+LDF 589; ->body3
+TRAP 6
+LD 1 0
+LD 1 1
+LD 1 2
+LD 1 3
+LD 2 11
 AP 4
 LDC 0
 CGT
-SEL 381 390
-JOIN
+TSEL 598 604; ->then8,else8
+LD 1 1
+LD 1 2
+LDC 1
+LD 0 5
+TAP 3
+RTN
+LDC 0
+LDC 10
+SUB
+RTN
+RTN
 LD 1 0
+LD 1 1
+LD 0 0
+LD 0 1
+LD 3 24
+AP 4
+TSEL 616 629; ->then12,else12
+LD 2 0
+LD 0 0
+LD 0 1
+LD 3 9
+AP 3
+LD 2 4
+CEQ
+TSEL 624 626; ->then13,else13
+LDC 1
+RTN
+LDC 0
+RTN
+RTN
+LDC 0
+RTN
+RTN
+DUM 3
+LDF 691; ->aux2
+LD 1 0
+LD 1 1
+LD 3 3
+LD 4 10
+AP 3
+CAR
+LD 1 0
+LD 1 1
+LD 3 3
+LD 4 10
+AP 3
+CDR
+LDF 648; ->body4
+TRAP 3
+LD 2 0
+LD 2 1
+LD 0 1
+LD 0 2
+LD 4 24
+AP 4
+LD 2 0
+LD 2 1
+CGT
+SEL 687
+                689; ->then10,else10
+LD 1 2
+CGT
+LD 4 12
+AP 2
+TSEL 663 684; ->then9,else9
+LD 0 1
+LD 0 2
+LD 2 4
+AP 2
+LD 0 1
+LD 0 2
+LD 0 1
+LD 0 2
+LDC 0
+LD 0 0
+AP 5
+ADD
+LD 0 1
+LD 0 2
+LD 1 2
 LDC 1
 ADD
-LD 0 6
+LD 2 5
+AP 3
+ADD
+RTN
 LDC 0
-LD 2 12
+RTN
+RTN
+LD 2 0
+JOIN
+LD 2 1
+JOIN
+DUM 4
+LD 1 0
+LD 1 1
+LD 4 2
+LD 6 10
+AP 3
+CAR
+LD 1 0
+LD 1 1
+LD 4 2
+LD 6 10
+AP 3
+CDR
+LD 1 2
+LD 1 3
+LD 4 3
+LD 6 10
+AP 3
+CAR
+LD 1 2
+LD 1 3
+LD 4 3
+LD 6 10
+AP 3
+CDR
+LDF 718; ->body5
+TRAP 4
+LD 3 2
+LD 1 4
+CGT
+TSEL 722 742; ->then11,else11
+LD 0 0
+LD 0 1
+LD 4 4
+AP 2
+LD 0 2
+LD 0 3
+LD 4 4
+AP 2
+ADD
+LD 0 0
+LD 0 1
+LD 0 2
+LD 0 3
+LD 1 4
+LDC 1
+ADD
+LD 2 0
+AP 5
+ADD
+RTN
+LDC 0
+RTN
+RTN
+LD 0 1
+ATOM
+TSEL 748 750; ->then7,else7
+LDC 0
+RTN
+LD 0 1
+CAR
+LD 0 0
+AP 1
+LD 0 0
+LD 0 1
+CDR
+LD 1 26
 AP 2
 CONS
-JOIN
+RTN
+RTN
+DUM 4
+LDF 783; ->a
+LDF 801; ->b
+LDF 819; ->c
+LDF 837; ->d
+LDF 769; ->body2
+TRAP 4
+LD 1 0
+LD 1 1
+LD 1 2
+LD 2 9
+AP 3
+LDC 0
+CGT
+TSEL 777 780; ->then2,else2
 LD 0 0
-LD 0 9
-LD 0 10
-LD 0 6
-LDC 1
-LD 2 12
-AP 2
-LD 2 7
+TAP 0
+RTN
+LDC 0
+RTN
+RTN
+LD 2 0
+LD 2 1
+LD 2 2
+LD 3 0
+LD 3 11
 AP 4
 LDC 0
 CGT
-SEL 403 412
-JOIN
-LD 1 0
-LDC 1
-ADD
-LD 0 6
-LDC 1
-LD 2 12
-AP 2
+TSEL 792 797; ->then6,else6
+LD 3 0
+LD 1 1
+AP 0
 CONS
-JOIN
-LD 0 0
-LD 0 9
-LD 0 10
-LD 0 6
-LDC 2
-LD 2 12
-AP 2
-LD 2 7
+RTN
+LD 1 1
+TAP 0
+RTN
+RTN
+LD 2 0
+LD 2 1
+LD 2 2
+LD 3 1
+LD 3 11
 AP 4
 LDC 0
 CGT
-SEL 425 434
-JOIN
-LD 1 0
-LDC 1
-ADD
-LD 0 6
-LDC 2
-LD 2 12
-AP 2
+TSEL 810 815; ->then5,else5
+LD 3 1
+LD 1 2
+AP 0
 CONS
-JOIN
-LD 1 0
-LDC 1
-ADD
-LD 0 6
-LDC 3
-LD 2 12
-AP 2
-CONS
-JOIN
-LD 0 0
-LD 0 9
-LD 0 10
-LD 0 6
-LDC 0
-LD 2 12
-AP 2
-LD 2 7
+RTN
+LD 1 2
+TAP 0
+RTN
+RTN
+LD 2 0
+LD 2 1
+LD 2 2
+LD 3 2
+LD 3 11
 AP 4
 LDC 0
 CGT
-SEL 456 465
-JOIN
-LD 1 0
-LDC 1
-ADD
-LD 0 6
-LDC 0
-LD 2 12
-AP 2
+TSEL 828 833; ->then4,else4
+LD 3 2
+LD 1 3
+AP 0
 CONS
-JOIN
-LD 0 0
-LD 0 9
-LD 0 10
-LD 0 6
-LDC 1
-LD 2 12
-AP 2
-LD 2 7
+RTN
+LD 1 3
+TAP 0
+RTN
+RTN
+LD 2 0
+LD 2 1
+LD 2 2
+LD 3 3
+LD 3 11
 AP 4
 LDC 0
 CGT
-SEL 478 487
-JOIN
-LD 1 0
-LDC 1
-ADD
-LD 0 6
-LDC 1
-LD 2 12
-AP 2
-CONS
-JOIN
-LD 0 0
-LD 0 9
-LD 0 10
-LD 0 6
-LDC 3
-LD 2 12
-AP 2
-LD 2 7
-AP 4
+TSEL 846 850; ->then3,else3
+LD 3 3
 LDC 0
-CGT
-SEL 500 509
-JOIN
+CONS
+RTN
+LD 3 3
+RTN
+RTN
+DUM 2
+LDF 863; ->auxY
+LDF 884; ->auxX
+LDF 858; ->body1
+TRAP 2
 LD 1 0
+LDC 0
+LD 0 0
+TAP 2
+RTN
+LD 0 0
+ATOM
+TSEL 866 868; ->then1,else1
+LDC 0
+RTN
+LD 0 0
+CAR
+LDC 0
+LD 0 1
+LD 1 1
+AP 3
+LD 0 0
+CDR
+LD 0 1
 LDC 1
 ADD
-LD 0 6
-LDC 3
-LD 2 12
+LD 1 0
 AP 2
 CONS
-JOIN
-LD 1 0
+RTN
+RTN
+LD 0 0
+ATOM
+TSEL 887 889; ->then0,else0
+LDC 0
+RTN
+LD 2 0
+LD 0 1
+LD 0 2
+LD 3 27
+AP 3
+LD 0 0
+CDR
+LD 0 1
 LDC 1
 ADD
-LD 0 6
-LDC 2
-LD 2 12
-AP 2
+LD 0 2
+LD 1 1
+AP 3
 CONS
-JOIN
+RTN
+RTN

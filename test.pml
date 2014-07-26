@@ -3,6 +3,8 @@ let right = 1 in
 let down = 2 in
 let left = 3 in
 
+let map, lambdaman, ghost, fruit = world in
+
 fun nth(l,n) {
     if n == 0
     then l.hd
@@ -35,23 +37,14 @@ fun mod(a,b) { a - b * (a / b) }
 
 fun length(l)
 {
-    fun aux(l,a)
+    fun auxLength(l,a)
     {
         if isempty(l)
         then a
-        else aux(l.tl,1+a)
+        else auxLength(l.tl,1+a)
     }
-    aux(l,0)
+    auxLength(l,0)
 }
-
-(*
-fun length(l)
-{
-    if isempty(l)
-    then 0
-    else 1 + length(l.tl)
-}
-*)
 
 fun isCrossing(cache,x,y)
 {
@@ -73,6 +66,25 @@ fun pill(c)
     and(c >= 2, c <= 3)
 }
 
+fun max3i(a,b,c)
+{
+    if and(a >= b, a >= c)
+    then 0
+    else if and(b >= a, b >= c)
+    then 1
+    else 3
+}
+fun max4i(a,b,c,d)
+{
+    if and(a >= b, and(a >= c, a >= d))
+    then 0
+    else if and(b >= a, and(b >= c, b >= d))
+    then 1
+    else if and(c >= a, and(c >= b, c >= d))
+    then 2
+    else 3
+}
+
 fun step(s,world) {
     let map, lambdaman, ghost, fruit = world in
     let vitality, location, dir, lives, score = lambdaman in
@@ -86,15 +98,69 @@ fun step(s,world) {
         else if pill(getNextCell(map,x,y,rot(dir,1))) then (s, rot(dir,1))
         else if pill(getNextCell(map,x,y,rot(dir,2))) then (s, rot(dir,2))
         else if pill(getNextCell(map,x,y,rot(dir,3))) then (s, rot(dir,3))
-        else if getNextCell(map,x,y,rot(dir,0)) > 0 then (s, rot(dir,0))
-        else if getNextCell(map,x,y,rot(dir,1)) > 0 then (s, rot(dir,1))
-        else if getNextCell(map,x,y,rot(dir,2)) > 0 then (s, rot(dir,2))
-        else (s, rot(dir,3))
+        else (s, rot(dir, max3i(
+            countCone(map,x,y,rot(dir,0),2),
+            countCone(map,x,y,rot(dir,1),2),
+            (* countCone(map,x,y,rot(dir,2),2), avoid going back *)
+            countCone(map,x,y,rot(dir,3),2))))
     else
         if getNextCell(map,x,y,rot(dir,0)) > 0 then (s, rot(dir,0))
         else if getNextCell(map,x,y,rot(dir,1)) > 0 then (s, rot(dir,1))
         else if getNextCell(map,x,y,rot(dir,3)) > 0 then (s, rot(dir,3))
         else (s, rot(dir,2))
+}
+
+fun dim(map)
+{
+    (length(map.hd), length(map))
+}
+
+fun valid(X,Y,x,y)
+{
+    and(x >= 0, and(x < X, and(y >= 0, y < Y)))
+}
+
+fun countCone(map,x,y,dir,tgt)
+{
+    let X, Y = dim(map) in
+
+    let od1 = mod(dir+1,4) in
+    let od2 = mod(dir+3,4) in
+
+    fun eval(x,y)
+    {
+        if valid(X,Y,x,y)
+        then if getCell(map,x,y) == tgt then 1 else 0
+        else 0
+    }
+
+    fun aux(x,y,i) {
+        fun aux2(x1,y1,x2,y2,j)
+        {
+            let px1, py1 = advance(x1,y1,od1) in
+            let px2, py2 = advance(x2,y2,od2) in
+
+            if j < i
+            then eval(px1,py1) + eval(px2,py2) + aux2(px1,py1,px2,py2,j+1)
+            else 0
+        }
+
+        let nx, ny = advance(x,y,dir) in
+
+        if and( valid(X,Y,nx,ny), i < if X > Y then X else Y )
+        then eval(nx,ny) + aux2(nx,ny,nx,ny,0) + aux(nx,ny,i+1)
+        else 0
+    }
+
+    if getNextCell(map,x,y,dir) > 0
+    then aux(x,y,1)
+    else 0 - 10
+}
+
+fun list_map(f,l) {
+    if isempty(l)
+    then 0
+    else ( f(l.hd), list_map(f,l.tl) )
 }
 
 fun listDir(map,x,y)
@@ -139,5 +205,5 @@ fun cacheDir(map) {
     auxY(map, 0)
 }
 
-let map, lambdaman, ghost, fruit = world in
+
 (cacheDir(map), step)
