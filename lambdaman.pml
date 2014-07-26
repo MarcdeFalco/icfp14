@@ -93,7 +93,8 @@ fun ghostIn(x,y,g)
 {
     let vit, pos, gdir = g in
     let x0,y0 = pos in
-    and(x==x0,y==y0)
+    let nx0,ny0 = advance(x0,y0,gdir) in
+    and(x==x0,y==y0) + and(x==nx0,y==ny0)
 }
 
 fun isGhost(x,y,ghosts)
@@ -276,6 +277,5 @@ fun cacheDir(map) {
     }
     auxY(map, 0)
 }
-
 
 (cacheDir(map), step)
