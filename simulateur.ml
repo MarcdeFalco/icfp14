@@ -1,4 +1,9 @@
 open Common
+open Graphics
+
+let pause () =
+    let _ = wait_next_event [ Key_pressed ] in
+    ()
 
 let tickcount = ref 0
 
@@ -57,29 +62,40 @@ let show_map () =
         for x = 0 to Array.length !map.(0) - 1 do
             let cpos = {x=x;y=y} in
 
-            let c = ref ' ' in
+            let color = match !map.(y).(x) with
+            | Wall -> blue | Empty -> white
+            | Pill -> red | Powerpill -> yellow
+            | Fruit -> if !fruit > 0 then green else white
+            | LStart ->  white
+            | GStart -> white in
 
-            if cpos = lambdaman.pos
-            then c := '\\';
-
-            for i = 0 to Array.length !ghosts - 1 do
-                let g = !ghosts.(i) in
-                if cpos = g.Ghcsim.pos
-                then c := '='
-            done;
-
-            (if !c = ' '
-            then c := match !map.(y).(x) with
-            | Wall -> '#' | Empty -> ' '
-            | Pill -> '.' | Powerpill -> 'o'
-            | Fruit -> if !fruit > 0 then '%' else ' ' 
-            | LStart ->  ' '
-            | GStart -> ' ');
-
-            print_char !c
+            set_color color;
+            fill_rect (20*x) (600 - 20*y) 20 20 
         done;
-        print_newline ()
-    done
+    done;
+
+    set_color black;
+    fill_rect (20*lambdaman.pos.x+4) (600 - 20*lambdaman.pos.y+4) 12 12;
+    for i = 0 to Array.length !ghosts - 1 do
+        let g = !ghosts.(i) in
+        let gpos = g.Ghcsim.pos in
+        set_color cyan;
+        fill_rect (20*gpos.x+4) (600 - 20*gpos.y+4) 12 12;
+        if g.Ghcsim.vit = Ghcsim.Fright
+        then set_color red
+        else if g.Ghcsim.vit = Ghcsim.Invisible
+        then set_color white
+        else set_color black;
+        moveto (20*gpos.x+4) (600 - 20*gpos.y+4);
+        draw_string (string_of_int i)
+    done;
+
+    moveto 0 620;
+    set_color white;
+    fill_rect 0 620 100 20;
+    moveto 0 620;
+    set_color black;
+    draw_string (string_of_int !tickcount)
 
 let init_lambdaman code =
     Gccsim.init_machine lambdaman.mac code;
@@ -92,7 +108,8 @@ let init_lambdaman code =
     lambdaman.vit <- 0;
     lambdaman.lives <- 3;
     lambdaman.dir <- UP;
-    lambdaman.score <- 0
+    lambdaman.score <- 0;
+    lambdaman.pos
 
 let init_ghosts codes =
     let nghosts = ref 0 in
@@ -103,6 +120,7 @@ let init_ghosts codes =
         done
     done;
     ghosts := Array.make !nghosts (Ghcsim.init_ghost {x=0;y=0} codes.(0));
+    let ghosts_starting_pos = Array.make !nghosts {x=0;y=0} in
     let ncodes = Array.length codes in
     let i = ref 0 in
     for y = 0 to Array.length !map - 1 do
@@ -110,10 +128,12 @@ let init_ghosts codes =
             if !map.(y).(x) = GStart
             then begin
                 !ghosts.(!i) <- Ghcsim.init_ghost {x=x;y=y} codes.(!i mod ncodes);
+                ghosts_starting_pos.(!i) <- {x=x;y=y};
                 incr i
             end
         done
-    done
+    done;
+    ghosts_starting_pos
 
 let encode_world () =
     let gccmap = ref (Gccsim.Int 0) in
@@ -126,7 +146,7 @@ let encode_world () =
         gccmap := Gccsim.Cons(!line, !gccmap)
     done;
 
-    let gcclam = Gccsim.Cons(Gccsim.Int lambdaman.vit,
+    let gcclam = Gccsim.Cons(Gccsim.Int (if lambdaman.vit > 0 then lambdaman.vit - !tickcount else 0),
         Gccsim.Cons(Gccsim.Cons(Gccsim.Int lambdaman.pos.x,Gccsim.Int lambdaman.pos.y),
         Gccsim.Cons(Gccsim.Int (Common.int_of_dir lambdaman.dir),
         Gccsim.Cons(Gccsim.Int lambdaman.lives,
@@ -141,22 +161,27 @@ let encode_world () =
         gccghs := Gccsim.Cons( gccgh, !gccghs )
     done;
 
-    let gccfruit = Gccsim.Int !fruit in
+    let gccfruit = Gccsim.Int (if !fruit > 0 then !fruit - !tickcount else 0) in
 
     Gccsim.Cons( !gccmap, Gccsim.Cons( gcclam, Gccsim.Cons( !gccghs, gccfruit)))
     
+exception FoundPill
+
 let _ =
+
     load_map "map1.txt";
+    let mapY = Array.length !map in
+    let mapX = Array.length !map.(0) in
+
+    open_graph " 1000x1000";
     let lambdaman_code = Compiler.compile_file "lambdaman.pml" in
-    (*
     for i = 0 to Array.length lambdaman_code - 1 do
         Printf.printf "%s ; %d\n"
             (Gcc.pp_instr lambdaman_code.(i)) i
     done;
-    *)
-    let ghosts_code = [| Ghc.alwaysdown |] in
-    init_lambdaman lambdaman_code; 
-    init_ghosts ghosts_code;
+    let ghosts_code = [| Ghc.fickle |] in
+    let lambdaman_start = init_lambdaman lambdaman_code in
+    let ghosts_start = init_ghosts ghosts_code in
     show_map ();
     let gccworld = encode_world () in
     let gcccodes = Gccsim.Int 42 in
@@ -180,7 +205,8 @@ let _ =
 
     let run_ghosts i =
         let g = !ghosts.(i) in
-        Ghcsim.run g !map !ghosts lambdaman.pos
+        let d = Ghcsim.run g !map !ghosts lambdaman.pos in
+        g.Ghcsim.dir <- d
     in
 
     let next {x=x;y=y} dir = 
@@ -207,6 +233,12 @@ let _ =
         !free
     in
 
+    let oppdir d =
+        match d with
+        UP -> DOWN | DOWN -> UP
+        | LEFT -> RIGHT | RIGHT -> LEFT
+    in
+
     let opposite d1 d2 =
         match d1, d2 with
         UP, DOWN -> true
@@ -216,13 +248,11 @@ let _ =
         | _ -> false
     in
 
-    let firstmove = Array.make (Array.length !ghosts) true in
+    let firstmove = Array.make (Array.length !ghosts) false in
 
-    for i = 0 to 10000 do
-        if !tickcount mod 100 = 0 
-        then begin Printf.printf "Tick %d\n" !tickcount;
-        show_map () end;
+    let fright_mode = ref None in
 
+    while true do
         (* Step 1 *)    
         (* Update lambdaman *)
         if !tickcount = !lam_tick
@@ -230,6 +260,8 @@ let _ =
             run_lambdaman ();
             if free (next lambdaman.pos lambdaman.dir)
             then lambdaman.pos <- next lambdaman.pos lambdaman.dir;
+
+            show_map (); 
 
             lam_tick := !lam_tick + 
                     if pill lambdaman.pos then tick_lambda_eating 
@@ -246,26 +278,43 @@ let _ =
 
                 run_ghosts i;
 
-                let illegal = not (free (next g.Ghcsim.pos g.Ghcsim.dir))
-                    || (nfree > 1 && opposite olddir g.Ghcsim.dir 
-                        && firstmove.(i)) in
+                let illegal d = not (free (next g.Ghcsim.pos d))
+                    || (nfree > 1 && opposite olddir d
+                        && not firstmove.(i)) in
+
+                let legal d = not (illegal d) in
 
                 firstmove.(i) <- false;
 
-                if illegal
+                if illegal g.Ghcsim.dir
                 then begin
-                    if free (next g.Ghcsim.pos olddir)
+                    (*
+                    Printf.printf "Ghost %d dir from %d to %d is illegal\n" i
+                    (int_of_dir olddir) (int_of_dir g.Ghcsim.dir);
+                    *)
+
+                    (if legal olddir
                     then g.Ghcsim.dir <- olddir
-                    else if free (next g.Ghcsim.pos UP)
+                    else if legal UP
                     then g.Ghcsim.dir <- UP
-                    else if free (next g.Ghcsim.pos RIGHT)
+                    else if legal RIGHT
                     then g.Ghcsim.dir <- RIGHT
-                    else if free (next g.Ghcsim.pos DOWN)
+                    else if legal DOWN
                     then g.Ghcsim.dir <- DOWN
-                    else g.Ghcsim.dir <- LEFT
+                    else g.Ghcsim.dir <- LEFT);
+
+                    (*
+                    Printf.printf "Set dir to %d\n" (int_of_dir g.Ghcsim.dir);
+                    flush stdout;
+                    *)
+                    (*
+                    pause ()
+                    *)
                 end;
 
                 g.Ghcsim.pos <- next g.Ghcsim.pos g.Ghcsim.dir;
+
+                show_map (); 
 
                 ghosts_tick.(i) <- ghosts_tick.(i)
                     + if g.Ghcsim.vit = Ghcsim.Fright
@@ -273,6 +322,100 @@ let _ =
                       else tick_ghosts.(i mod 4)
             end
         done;
+
+        (* Step 2 *)
+        (* tick events *)
+        (match !fright_mode with
+        | None -> ()
+        | Some tick -> if !tickcount = tick
+            then begin
+                fright_mode := None;
+                lambdaman.vit <- 0;
+                for i = 0 to Array.length !ghosts - 1 do
+                    let g = !ghosts.(i) in
+                    g.Ghcsim.vit <- Ghcsim.Standard
+                done
+            end);
+
+        if !tickcount = 127 * mapX * mapY * 16
+        then begin lambdaman.lives <- 0 end;
+
+        if !tickcount = 127 * 200 || !tickcount = 127 * 200 
+        then begin fruit := !tickcount + 80 * 127 end;
+        if !tickcount = !fruit
+        then begin fruit := 0 end;
+
+        (* Step 3 *)
+        let c = !map.(lambdaman.pos.y).(lambdaman.pos.x) in
+        if c = Pill
+        then begin
+            lambdaman.score <- lambdaman.score + 10;
+            !map.(lambdaman.pos.y).(lambdaman.pos.x) <- Empty
+        end;
+
+        if c = Powerpill
+        then begin
+            lambdaman.vit <- !tickcount + 127 * 20;
+            lambdaman.score <- lambdaman.score + 50;
+            !map.(lambdaman.pos.y).(lambdaman.pos.x) <- Empty;
+            fright_mode := Some (!tickcount + 127 * 20);
+            for i = 0 to Array.length !ghosts - 1 do
+                let g = !ghosts.(i) in
+                g.Ghcsim.dir <- oppdir g.Ghcsim.dir;
+                g.Ghcsim.vit <- Ghcsim.Fright
+            done
+        end;
+
+        if !fruit > 0 && c = Fruit
+        then begin
+            let fruitscore = 100 in
+            (* TODO *)
+            lambdaman.score <- lambdaman.score + fruitscore;
+            fruit := 0
+        end;
+
+        (* Step 4 *)
+        for i = 0 to Array.length !ghosts - 1 do
+            let g = !ghosts.(i) in
+            let gpos = g.Ghcsim.pos in
+            if gpos = lambdaman.pos && g.Ghcsim.vit <> Ghcsim.Invisible
+            then begin
+                if !fright_mode = None
+                then begin
+                    lambdaman.pos <- lambdaman_start;
+                    for j = 0 to Array.length !ghosts - 1 do
+                        let g = !ghosts.(j) in
+                        g.Ghcsim.pos <- ghosts_start.(j)
+                    done;
+                    lambdaman.lives <- lambdaman.lives - 1
+                end else begin
+                    g.Ghcsim.vit <- Ghcsim.Invisible;
+                    g.Ghcsim.pos <- ghosts_start.(i)
+                    (* TODO score *)
+                end
+            end
+        done;
+
+        (* Step 5 *)
+        let won = try
+            for x = 0 to mapX - 1 do
+                for y = 0 to mapY - 1 do
+                    if !map.(y).(x) = Pill
+                    then raise FoundPill
+                done
+            done;
+            true
+        with FoundPill -> false in
+
+        if won
+        then begin
+            lambdaman.score <- (lambdaman.lives + 1) * lambdaman.score;
+            failwith "Game won"
+        end;
+
+        (* Step 6 *)
+        if lambdaman.lives = 0
+        then begin failwith "Game lost" end;
 
         incr tickcount
     done

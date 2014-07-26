@@ -23,7 +23,7 @@ type ghost = {
 
 let init_machine code = { regs = Array.make 8 0; pc = 0; data = Array.make 256 0; code = code }
 
-let init_ghost pos code = { vit = Standard; pos = pos; dir = UP; mac = init_machine code }
+let init_ghost pos code = { vit = Standard; pos = pos; dir = DOWN; mac = init_machine code }
 
 exception Found of int
 let index a v =
@@ -37,7 +37,7 @@ with Found n -> n
 exception EvalError
 exception Stop
 
-let eval ghost map ghosts lambdamanpos =
+let eval target_dir ghost map ghosts lambdamanpos =
     let mac = ghost.mac in
 
     let rec get a =
@@ -48,7 +48,17 @@ let eval ghost map ghosts lambdamanpos =
         | Const n -> n
     in
 
+    let cleanup v = 
+        let sv = ref v in
+        while !sv < 0 do
+            sv := !sv + 256
+        done;
+        sv := !sv mod 256;
+        !sv
+    in
+
     let set a v =
+        let v = cleanup v in
         match a with
         | Reg n -> if n < 8 then mac.regs.(n) <- v
                     else raise EvalError
@@ -60,11 +70,11 @@ let eval ghost map ghosts lambdamanpos =
     let instr = mac.code.(mac.pc) in
     match instr with
     | MOV(a,b) -> set a (get b)
-    | INC a -> set a (get a + 1)
-    | DEC a -> set a (get a - 1)
-    | ADD(a,b) -> set a ((get a + get b) mod 256)
-    | SUB(a,b) -> set a ((get a - get b) mod 256)
-    | MUL(a,b) -> set a ((get a * get b) mod 256)
+    | INC a -> set a (get a + 1) 
+    | DEC a -> set a (get a - 1) 
+    | ADD(a,b) -> set a (get a + get b) 
+    | SUB(a,b) -> set a (get a - get b) 
+    | MUL(a,b) -> set a (get a * get b)
     | DIV(a,b) -> set a (get a / get b)
     | AND(a,b) -> set a (get a land get b)
     | OR(a,b) -> set a (get a lor get b)
@@ -74,9 +84,11 @@ let eval ghost map ghosts lambdamanpos =
     | JGT(n,a,b) -> if get a > get b then mac.pc <- n
     | INT n -> begin
         match n with
-        | 0 -> ghost.dir <- Common.dir_of_int mac.regs.(0)
+        | 0 -> 
+            let d = dir_of_int mac.regs.(0) in
+            target_dir := d
         | 1 -> mac.regs.(0) <- lambdamanpos.x;
-              mac.regs.(1) <- lambdamanpos.y
+             mac.regs.(1) <- lambdamanpos.y
         | 2 -> raise EvalError
         | 3 -> mac.regs.(0) <- index ghosts ghost
         | 4 -> let p = Common.map_get_starting_ghost_pos map mac.regs.(0) in
@@ -89,32 +101,46 @@ let eval ghost map ghosts lambdamanpos =
             mac.regs.(0) <- int_of_vit g.vit;
             mac.regs.(1) <- Common.int_of_dir g.dir
         | 7 -> mac.regs.(0) <- Common.int_of_cell map.(mac.regs.(1)).(mac.regs.(0))
-        | 8 -> Printf.printf "A:%d B:%d C:%d D:%d E:%d F:%d G:%d H:%d | PC:%d\n" 
-            mac.regs.(0)
-            mac.regs.(1)
-            mac.regs.(2)
+        | 8 -> Printf.printf "trace ghost%d: %d %d %d %d %d %d %d %d %d\n"
+            (index ghosts ghost)
+            mac.pc mac.regs.(0)
+            mac.regs.(1) mac.regs.(2)
             mac.regs.(3)
             mac.regs.(4)
             mac.regs.(5)
             mac.regs.(6)
-            mac.regs.(7)
-            mac.pc
+            mac.regs.(7);
+            flush stdout
     end
     | HLT -> raise Stop
 
 let run ghost map ghosts lambdamanpos =
     let mac = ghost.mac in
+    let target_dir = ref ghost.dir in
     try
         let instr_count = ref 0 in
         mac.pc <- 0;
         while true do
             let oldpc = mac.pc in
-            eval ghost map ghosts lambdamanpos;
+            eval target_dir ghost map ghosts lambdamanpos;
+            (*
+            Printf.printf "auto ghost%d: %d %d %d %d %d %d %d %d %d\n"
+            (index ghosts ghost)
+            mac.pc mac.regs.(0)
+            mac.regs.(1) mac.regs.(2)
+            mac.regs.(3)
+            mac.regs.(4)
+            mac.regs.(5)
+            mac.regs.(6)
+            mac.regs.(7);
+            flush stdout;
+            *)
             if oldpc = mac.pc
             then mac.pc <- mac.pc + 1;
             incr instr_count;
             if !instr_count = 1024
             then raise Stop
-        done
-    with Stop -> ()
+        done;
+        failwith "Out of reach"
+    with Stop -> !target_dir
 

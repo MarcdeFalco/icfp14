@@ -6,7 +6,7 @@ let dir_of_int n = match n with
     0 -> UP | 2 -> DOWN | 1 -> RIGHT | _ -> LEFT
 
 let int_of_dir n = match n with
-    UP -> 0 | DOWN -> 2 | RIGHT -> 1 | _ -> 3
+    UP -> 0 | DOWN -> 2 | RIGHT -> 1 | LEFT -> 3
 
 type cell = Wall | Empty | Pill | Powerpill | LStart | GStart | Fruit
 
