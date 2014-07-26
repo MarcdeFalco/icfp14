@@ -3,6 +3,10 @@ let right = 1 in
 let down = 2 in
 let left = 3 in
 
+let cell_pill = 2 in
+let cell_powerpill = 3 in
+let cell_fruit = 4 in
+
 let map, lambdaman, ghost, fruit = world in
 
 fun nth(l,n) {
@@ -85,28 +89,59 @@ fun max4i(a,b,c,d)
     else 3
 }
 
+fun ghostIn(x,y,g)
+{
+    let vit, pos, gdir = g in
+    let x0,y0 = pos in
+    and(x==x0,y==y0)
+}
+
+fun isGhost(x,y,ghosts)
+{
+    if isempty(ghosts)
+    then 0
+    else ghostIn(x,y,ghosts.hd) + isGhost(x,y,ghosts.tl)
+}
+
 fun step(s,world) {
-    let map, lambdaman, ghost, fruit = world in
+    let map, lambdaman, ghosts, fruit = world in
     let vitality, location, dir, lives, score = lambdaman in
     let x, y = location in
 
     let cache = s in
 
+    fun freeNoGhost(map,x,y,d)
+    {
+        let nx, ny = advance(x,y,d) in 
+        if vitality > 0
+        then getCell(map,nx,ny) > 0
+        else and(getCell(map,nx,ny) > 0, isGhost(nx,ny,ghosts) == 0)
+    }
+
+    fun pillNoGhost(map,x,y,d)
+    {
+        let nx, ny = advance(x,y,d) in 
+
+        if vitality > 0
+        then pill(getCell(map,nx,ny))
+        else and(pill(getCell(map,nx,ny)), isGhost(nx,ny,ghosts) == 0)
+    }
+
     if isCrossing(cache,x,y)
     then 
-        if pill(getNextCell(map,x,y,rot(dir,0))) then (s, rot(dir,0))
-        else if pill(getNextCell(map,x,y,rot(dir,1))) then (s, rot(dir,1))
-        else if pill(getNextCell(map,x,y,rot(dir,2))) then (s, rot(dir,2))
-        else if pill(getNextCell(map,x,y,rot(dir,3))) then (s, rot(dir,3))
-        else (s, rot(dir, max3i(
-            countCone(map,x,y,rot(dir,0),2),
-            countCone(map,x,y,rot(dir,1),2),
-            (* countCone(map,x,y,rot(dir,2),2), avoid going back *)
-            countCone(map,x,y,rot(dir,3),2))))
+        if pillNoGhost(map,x,y,rot(dir,0)) then (s, rot(dir,0))
+        else if pillNoGhost(map,x,y,rot(dir,1)) then (s, rot(dir,1))
+        else if pillNoGhost(map,x,y,rot(dir,3)) then (s, rot(dir,3))
+        else if pillNoGhost(map,x,y,rot(dir,2)) then (s, rot(dir,2))
+        else (s, rot(dir, max4i(
+            countCone(map,ghosts,fruit,vitality,x,y,rot(dir,0)),
+            countCone(map,ghosts,fruit,vitality,x,y,rot(dir,1)),
+            countCone(map,ghosts,fruit,vitality,x,y,rot(dir,2)),
+            countCone(map,ghosts,fruit,vitality,x,y,rot(dir,3)))))
     else
-        if getNextCell(map,x,y,rot(dir,0)) > 0 then (s, rot(dir,0))
-        else if getNextCell(map,x,y,rot(dir,1)) > 0 then (s, rot(dir,1))
-        else if getNextCell(map,x,y,rot(dir,3)) > 0 then (s, rot(dir,3))
+        if freeNoGhost(map,x,y,rot(dir,0)) then (s, rot(dir,0))
+        else if freeNoGhost(map,x,y,rot(dir,1)) then (s, rot(dir,1))
+        else if freeNoGhost(map,x,y,rot(dir,3)) then (s, rot(dir,3))
         else (s, rot(dir,2))
 }
 
@@ -120,9 +155,41 @@ fun valid(X,Y,x,y)
     and(x >= 0, and(x < X, and(y >= 0, y < Y)))
 }
 
-fun countCone(map,x,y,dir,tgt)
+fun getCone(x0,y0,x,y)
+{
+    fun abs(v) {
+        if v < 0
+        then 0 - v
+        else v
+    }
+    
+    if x >= x0
+    then if abs(y-y0) <= x-x0
+         then right
+         else if y >= y0 then up else down
+    else if abs(y-y0) <= x0-x
+         then left
+         else if y >= y0 then up else down
+}
+
+fun inSameCone(x0,y0,dir,ghost)
+{
+    let vit, pos, gdir = ghost in
+    let x, y = pos in
+    dir == getCone(x0,y0,x,y)
+}
+
+fun countGhostsInCone(x,y,dir,ghosts)
+{
+    if isempty(ghosts)
+    then 0
+    else inSameCone(x,y,dir,ghosts.hd) + countGhostsInCone(x,y,dir,ghosts.tl)
+}
+
+fun countCone(map,ghosts,fruit,powered,x,y,dir)
 {
     let X, Y = dim(map) in
+    let maxDim = if X > Y then X else Y in
 
     let od1 = mod(dir+1,4) in
     let od2 = mod(dir+3,4) in
@@ -130,7 +197,10 @@ fun countCone(map,x,y,dir,tgt)
     fun eval(x,y)
     {
         if valid(X,Y,x,y)
-        then if getCell(map,x,y) == tgt then 1 else 0
+        then if getCell(map,x,y) == cell_pill then 1
+        else if getCell(map,x,y) == cell_powerpill then 10
+        else if and(fruit > 0, getCell(map,x,y) == cell_fruit) then fruit / 2
+             else 0
         else 0
     }
 
@@ -141,20 +211,22 @@ fun countCone(map,x,y,dir,tgt)
             let px2, py2 = advance(x2,y2,od2) in
 
             if j < i
-            then eval(px1,py1) + eval(px2,py2) + aux2(px1,py1,px2,py2,j+1)
+            then (X - i + Y - j) * (eval(px1,py1) + eval(px2,py2)) + aux2(px1,py1,px2,py2,j+1)
             else 0
         }
 
         let nx, ny = advance(x,y,dir) in
 
-        if and( valid(X,Y,nx,ny), i < if X > Y then X else Y )
+        if and( valid(X,Y,nx,ny), i < 10 )
         then eval(nx,ny) + aux2(nx,ny,nx,ny,0) + aux(nx,ny,i+1)
         else 0
     }
 
-    if getNextCell(map,x,y,dir) > 0
-    then aux(x,y,1)
-    else 0 - 10
+    let nx, ny = advance(x,y,dir) in
+
+    if and(getCell(map,nx,ny)> 0, isGhost(nx,ny,ghosts) <= powered)
+    then aux(x,y,1) + (if powered > 0 then powered else 0 - 100) * countGhostsInCone(x,y,dir,ghosts)
+    else 0 - 100000
 }
 
 fun list_map(f,l) {
