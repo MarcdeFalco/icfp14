@@ -1,0 +1,51 @@
+INT 3
+INT 5
+MOV c,a
+MOV d,b
+INT 3
+INT 4
+INT 3
+INT 6
+MOV e,a
+MOV f,b
+INT 1
+MOV g,a
+MOV h,b
+JGT 50,e,0
+	JEQ 32,c,g
+	JGT 24,c,g
+	MOV a,c
+	INC a
+	MOV b,d
+	INT 7
+	JEQ 24,a,0
+		MOV a,1
+		INT 0
+		HLT
+	MOV a,c
+	DEC a
+	MOV b,d
+	INT 7
+	JEQ 32,a,0
+		MOV a,3
+		INT 0
+		HLT
+	JEQ 50,d,h
+	JGT 42,d,h
+	MOV a,c
+	MOV b,d
+	INc b
+	INT 7
+	JEQ 42,a,0
+		MOV a,2
+		INT 0
+		HLT
+	MOV a,c
+	MOV b,d
+	DEC b
+	INT 7
+	JEQ 50,a,0
+		MOV a,0
+		INT 0
+		HLT
+HLT
