@@ -18,6 +18,7 @@ type expr =
     | Tail of expr
     | Chain of expr * expr
     | Print of expr
+    | Assign of string * expr
     | Atom of expr
 
 type decl =

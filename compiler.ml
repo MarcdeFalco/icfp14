@@ -11,14 +11,14 @@ let rec compile env (loc, e) =
         | [] -> raise Not_found
         | (ss,_)::q -> if ss = s then 0 else 1 + get_idx s q
     in
-    let rec lookup env s n =
+    let rec lookup bl env s n =
         match env with
         | [] -> failwith ("Invalid lookup: " ^ s)
         | loc::q ->
             if List.mem_assoc s loc
             then let m = get_idx s loc in
-                LD (n,m)
-            else lookup q s (n+1)
+                (if bl then LD (n,m) else ST (n,m))
+            else lookup bl q s (n+1)
     in
     let rec eval_expr bt env e =
         match e with
@@ -29,7 +29,8 @@ let rec compile env (loc, e) =
         | Sub (a,b) -> eval_expr false env a @ eval_expr false env b @ [ SUB ]
         | Mul (a,b) -> eval_expr false env a @ eval_expr false env b @ [ MUL ]
         | Div (a,b) -> eval_expr false env a @ eval_expr false env b @ [ DIV ]
-        | Var s -> [ lookup env s 0 ]
+        | Var s -> [ lookup true env s 0 ]
+        | Assign(s,e) -> eval_expr false env e @ [ lookup false env s 0 ]
         | Tuple (e,i,l) -> 
                 let rec aux n p = 
                     match n, p with
@@ -42,7 +43,7 @@ let rec compile env (loc, e) =
         | Call (f,el) ->
                 let n = List.length el in
                 List.concat (List.map (eval_expr false env) el)
-                @ [ lookup env f 0; if bt then TAP n else AP n ]
+                @ [ lookup true env f 0; if bt then TAP n else AP n ]
         | Equals(a,b) -> eval_expr false env a @ eval_expr false env b @ [ CEQ ]
         | Greater(a,b) -> eval_expr false env a @ eval_expr false env b @ [ CGT ]
         | GreaterEquals(a,b) -> eval_expr false env a @ eval_expr false env b @ [ CGTE ]

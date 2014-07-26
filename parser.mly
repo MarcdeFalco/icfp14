@@ -75,6 +75,7 @@ expr: a = expr PLUS b = expr { Add(a,b) }
     | a = expr DOT TL { Tail a }
     | RETURN a = expr { Chain(Print a, a) }
     | PRINT a = expr { Print a }
+    | v = ID LEFTARROW a = expr { Assign(v,a) }
     | ATOM LPAREN a = expr RPAREN { Atom a }
     | LPAREN e = main_expr RPAREN { e }
     | f = ID LPAREN args = separated_list(COMMA, expr) RPAREN { Call(f,args) }

@@ -2,6 +2,7 @@ type instr =
     | Label of string
     | LDC of int 
     | LD of int * int
+    | ST of int * int
     | ADD | SUB | MUL | DIV
     | CEQ | CGT | CGTE
     | ATOM
@@ -18,6 +19,7 @@ let pp_instr i =
     | Label s -> s ^ ":"
     | LDC n -> "LDC " ^ string_of_int n
     | LD (a,b) -> "LD " ^ string_of_int a ^ " " ^ string_of_int b
+    | ST (a,b) -> "ST " ^ string_of_int a ^ " " ^ string_of_int b
     | ADD -> "ADD"
     | SUB -> "SUB"
     | MUL -> "MUL"
