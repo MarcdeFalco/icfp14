@@ -10,7 +10,7 @@ type instr =
     | LDF of string | AP of int
     | RTN
     | DUM of int | RAP of int
-    | STOP
+    | DBUG | STOP
 
 let pp_instr i =
     match i with
@@ -35,6 +35,7 @@ let pp_instr i =
     | LDF s -> "LDF " ^ s
     | RTN -> "RTN"
     | DUM n -> "DUM " ^ string_of_int n
+    | DBUG -> "DBUG"
     | STOP -> "STOP"
 
 let pp_code code = String.concat "\n" (List.map pp_instr code)

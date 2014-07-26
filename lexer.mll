@@ -13,7 +13,8 @@
             ("then", THEN); ("else", ELSE);
             ("rec", REC); ("fun", FUN);
             ("in", IN); ("var", VAR);
-            ("return", RETURN)
+            ("hd", HD); ("tl", TL);
+            ("print", PRINT); ("return", RETURN)
         ]
 }
 
@@ -37,6 +38,7 @@ rule token = parse
 | ']' { RBRACKET }
 | '|' { PIPE }
 | ',' { COMMA }
+| '.' { DOT }
 | ':' { COLON }
 | ';' { SEMICOLON }
 | "==" { DOUBLEEQUALS }

@@ -11,6 +11,13 @@ type expr =
     | Var of string
     | If of expr * expr * expr
     | Equals of expr * expr
+    | Greater of expr * expr
+    | GreaterEquals of expr * expr
+    | Tuple of expr * int * int
+    | Head of expr
+    | Tail of expr
+    | Chain of expr * expr
+    | Print of expr
 
 type decl =
     | DVar of expr

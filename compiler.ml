@@ -29,19 +29,32 @@ let rec compile env (loc, e) =
         | Mul (a,b) -> eval_expr env a @ eval_expr env b @ [ MUL ]
         | Div (a,b) -> eval_expr env a @ eval_expr env b @ [ DIV ]
         | Var s -> [ lookup env s 0 ]
+        | Tuple (e,i,l) -> 
+                let rec aux n p = 
+                    match n, p with
+                    | 0, _ -> [CAR]
+                    | 1, 2 -> [CDR]
+                    | _ -> CDR :: aux (n-1) (p-1)
+                in eval_expr env e @ aux i l
+        | Head a -> eval_expr env a @ [CAR]
+        | Tail a -> eval_expr env a @ [CDR]
         | Call (f,el) ->
                 List.concat (List.map (eval_expr env) el)
                 @ [ lookup env f 0; AP (List.length el) ]
         | Equals(a,b) -> eval_expr env a @ eval_expr env b @ [ CEQ ]
+        | Greater(a,b) -> eval_expr env a @ eval_expr env b @ [ CGT ]
+        | GreaterEquals(a,b) -> eval_expr env a @ eval_expr env b @ [ CGTE ]
         | If(c,t,f) ->
             let tlabel = "then"^string_of_int !iflbl in
             let elabel = "else"^string_of_int !iflbl in
             incr iflbl;
             branches := (tlabel, t) :: (elabel,f) :: !branches;
             eval_expr env c @ [ SEL(tlabel, elabel) ]
+        | Chain(a,b) -> eval_expr env a @ eval_expr env b
+        | Print a -> eval_expr env a @ [ DBUG ]
     in
     let rec push_locals loc = match loc with
-    | (_, DVar e)::q -> eval_expr env e @ push_locals q
+    | (_, DVar e)::q -> eval_expr ([]::env) e @ push_locals q
     | (s, DFun _)::q -> LDF s :: push_locals q
     | [] -> []
     in
@@ -67,7 +80,8 @@ let rec compile env (loc, e) =
         let exprcode = eval_expr env e in 
         exprcode @ [ RTN ] @ compile_branches env
     end
-    else begin
+    else
+    begin
         (* Local definitions -> recursive encoding *)
         let label = "body"^string_of_int !lbl in
         incr lbl;
@@ -109,9 +123,9 @@ let _ =
     really_input f s 0 sz;
     try
         let l = Parser.main Lexer.token (Lexing.from_string s) in
-        let code = compile [] l in
-        print_string (pp_code code);
-        print_string "\n\nStripped:\n";
+        let code = compile [[("world", DDummy); ("unk", DDummy)]] l in
+        (*print_string (pp_code code);*)
+        (*print_string "\n\nStripped:\n";*)
         print_stripped code
     with Ast.SyntaxError(loc,startpos,endpos) ->
         Printf.printf "Syntax error while parsing a %s rule:\n%s\n"
