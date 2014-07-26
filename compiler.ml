@@ -1,5 +1,5 @@
 open Ast
-open Asm
+open Gcc
 
 let lbl = ref 0
 let iflbl = ref 0
@@ -54,7 +54,7 @@ let rec compile env (loc, e) =
                 let elabel = "else"^string_of_int !iflbl in
                 incr iflbl;
                 eval_expr false env c 
-                @ [TSEL(tlabel,elabel); Label tlabel]
+                @ [TSELs(tlabel,elabel); Label tlabel]
                 @ eval_expr true env t
                 @ [RTN; Label elabel]
                 @ eval_expr true env f
@@ -64,7 +64,7 @@ let rec compile env (loc, e) =
                 let elabel = "else"^string_of_int !iflbl in
                 incr iflbl;
                 branches := (tlabel, t) :: (elabel,f) :: !branches;
-                eval_expr false env c @ [ SEL(tlabel, elabel) ]
+                eval_expr false env c @ [ SELs(tlabel, elabel) ]
             end
         | Chain(a,b) -> eval_expr false env a @ eval_expr false env b
         | Print a -> eval_expr false env a @ [ DBUG ]
@@ -96,7 +96,7 @@ let rec compile env (loc, e) =
         
     let rec push_locals loc others = match loc with
     | (_, DVar e)::q -> eval_expr false ([]::env) (expand others e) @ push_locals q others
-    | (s, DFun _)::q -> LDF s :: push_locals q others
+    | (s, DFun _)::q -> LDFs s :: push_locals q others
     | [] -> []
     in
     let compile_branches env =
@@ -129,7 +129,7 @@ let rec compile env (loc, e) =
         let exprcode = 
             (DUM (List.length loc)
                 :: (push_locals loc loc)) @
-                [ LDF label; TRAP (List.length loc);
+                [ LDFs label; TRAP (List.length loc);
                   Label label ]
                 @ (eval_expr true (loc :: env) e)
                 @ [ RTN ]
@@ -138,29 +138,30 @@ let rec compile env (loc, e) =
             @ compile_fun (loc :: env) loc
     end
 
-let print_stripped code =
-    let rec aux code acc pos = 
-        match code with 
-        | [] -> acc
-        | Label s::q -> aux q ((s,pos)::acc) pos
-        | _::q -> aux q acc (pos+1)
-    in
-    let labels = aux code [] 0 in
-    print_string
-    (String.concat ""
-        (List.map 
-            (fun i -> match i with
-                Label s -> "" (*"; " ^ s ^ " \n"*)
-                | LDF s -> "LDF " ^ string_of_int (List.assoc s labels) ^ "; ->"
-                ^ s ^ "\n"
-                | SEL (a,b) -> "SEL " ^ string_of_int (List.assoc a labels) ^ "
-                " ^ string_of_int (List.assoc b labels) ^ "; ->" ^ a ^ "," ^ b
-                ^ "\n"
-                | TSEL (a,b) -> "TSEL " ^ string_of_int (List.assoc a labels) ^ " " ^ string_of_int (List.assoc b labels) ^ "; ->" ^ a ^ "," ^ b
-                ^ "\n"
-                | _ -> pp_instr i ^ "\n")
-            code))
+let compile_file fn =
+    Printexc.record_backtrace true;
+    let f = open_in fn in
+    let sz = in_channel_length f in
+    let s = String.make sz ' ' in
+    really_input f s 0 sz;
+    try
+        let l = Parser.main Lexer.token (Lexing.from_string s) in
+        let code = compile [[("world", DDummy); ("unk", DDummy)]] l in
+        let acode = absolute code in
+        acode
+    with Ast.SyntaxError(loc,startpos,endpos) ->
+        let a = startpos.pos_cnum in
+        let b = endpos.pos_cnum in
+        let n = String.length s in
+        let context = 20 in
+        let a0 = max 0 (a - context) in
+        let b0 = min (n-1) (b + context) in
+        let sub a b = String.sub s a (b-a) in
+        Printf.printf "Syntax error while parsing a %s rule:\n%s***%s***%s\n"
+            loc (sub a0 a) (sub a b) (sub b b0);
+        failwith "Syntax error"
 
+(*
 let _ =
     Printexc.record_backtrace true;
     let f = open_in Sys.argv.(1) in
@@ -170,9 +171,11 @@ let _ =
     try
         let l = Parser.main Lexer.token (Lexing.from_string s) in
         let code = compile [[("world", DDummy); ("unk", DDummy)]] l in
-        (*print_string (pp_code code);*)
-        (*print_string "\n\nStripped:\n";*)
-        print_stripped code
+        let acode = absolute code in
+        for i = 0 to Array.length acode - 1 do
+            Printf.printf "%s ; %d\n"
+                (pp_instr acode.(i)) i
+        done
     with Ast.SyntaxError(loc,startpos,endpos) ->
         let a = startpos.pos_cnum in
         let b = endpos.pos_cnum in
@@ -183,3 +186,4 @@ let _ =
         let sub a b = String.sub s a (b-a) in
         Printf.printf "Syntax error while parsing a %s rule:\n%s***%s***%s\n"
             loc (sub a0 a) (sub a b) (sub b b0)
+*)
