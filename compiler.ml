@@ -20,14 +20,15 @@ let rec compile env (loc, e) =
                 LD (n,m)
             else lookup q s (n+1)
     in
-    let rec eval_expr env e =
+    let rec eval_expr bt env e =
         match e with
         | Const n -> [LDC n]
-        | Cons (a,b) -> eval_expr env a @ eval_expr env b @ [ CONS ]
-        | Add (a,b) -> eval_expr env a @ eval_expr env b @ [ ADD ]
-        | Sub (a,b) -> eval_expr env a @ eval_expr env b @ [ SUB ]
-        | Mul (a,b) -> eval_expr env a @ eval_expr env b @ [ MUL ]
-        | Div (a,b) -> eval_expr env a @ eval_expr env b @ [ DIV ]
+        | Atom a -> eval_expr false env a @ [ATOM]
+        | Cons (a,b) -> eval_expr false env a @ eval_expr false env b @ [ CONS ]
+        | Add (a,b) -> eval_expr false env a @ eval_expr false env b @ [ ADD ]
+        | Sub (a,b) -> eval_expr false env a @ eval_expr false env b @ [ SUB ]
+        | Mul (a,b) -> eval_expr false env a @ eval_expr false env b @ [ MUL ]
+        | Div (a,b) -> eval_expr false env a @ eval_expr false env b @ [ DIV ]
         | Var s -> [ lookup env s 0 ]
         | Tuple (e,i,l) -> 
                 let rec aux n p = 
@@ -35,23 +36,37 @@ let rec compile env (loc, e) =
                     | 0, _ -> [CAR]
                     | 1, 2 -> [CDR]
                     | _ -> CDR :: aux (n-1) (p-1)
-                in eval_expr env e @ aux i l
-        | Head a -> eval_expr env a @ [CAR]
-        | Tail a -> eval_expr env a @ [CDR]
+                in eval_expr false env e @ aux i l
+        | Head a -> eval_expr false env a @ [CAR]
+        | Tail a -> eval_expr false env a @ [CDR]
         | Call (f,el) ->
-                List.concat (List.map (eval_expr env) el)
-                @ [ lookup env f 0; AP (List.length el) ]
-        | Equals(a,b) -> eval_expr env a @ eval_expr env b @ [ CEQ ]
-        | Greater(a,b) -> eval_expr env a @ eval_expr env b @ [ CGT ]
-        | GreaterEquals(a,b) -> eval_expr env a @ eval_expr env b @ [ CGTE ]
+                let n = List.length el in
+                List.concat (List.map (eval_expr false env) el)
+                @ [ lookup env f 0; if bt then TAP n else AP n ]
+        | Equals(a,b) -> eval_expr false env a @ eval_expr false env b @ [ CEQ ]
+        | Greater(a,b) -> eval_expr false env a @ eval_expr false env b @ [ CGT ]
+        | GreaterEquals(a,b) -> eval_expr false env a @ eval_expr false env b @ [ CGTE ]
         | If(c,t,f) ->
-            let tlabel = "then"^string_of_int !iflbl in
-            let elabel = "else"^string_of_int !iflbl in
-            incr iflbl;
-            branches := (tlabel, t) :: (elabel,f) :: !branches;
-            eval_expr env c @ [ SEL(tlabel, elabel) ]
-        | Chain(a,b) -> eval_expr env a @ eval_expr env b
-        | Print a -> eval_expr env a @ [ DBUG ]
+            if bt
+            then begin
+                let tlabel = "then"^string_of_int !iflbl in
+                let elabel = "else"^string_of_int !iflbl in
+                incr iflbl;
+                eval_expr false env c 
+                @ [TSEL(tlabel,elabel); Label tlabel]
+                @ eval_expr true env t
+                @ [RTN; Label elabel]
+                @ eval_expr true env f
+                @ [RTN]
+            end else begin
+                let tlabel = "then"^string_of_int !iflbl in
+                let elabel = "else"^string_of_int !iflbl in
+                incr iflbl;
+                branches := (tlabel, t) :: (elabel,f) :: !branches;
+                eval_expr false env c @ [ SEL(tlabel, elabel) ]
+            end
+        | Chain(a,b) -> eval_expr false env a @ eval_expr false env b
+        | Print a -> eval_expr false env a @ [ DBUG ]
     in
     let rec expand loc e =
         match e with
@@ -74,11 +89,12 @@ let rec compile env (loc, e) =
         | If(a,b,c) -> If(expand loc a, expand loc b, expand loc c)
         | Chain(a,b) -> Chain(expand loc a, expand loc b)
         | Print a -> Print (expand loc a)
+        | Atom a -> Atom (expand loc a)
         | _ -> e
     in
         
     let rec push_locals loc others = match loc with
-    | (_, DVar e)::q -> eval_expr ([]::env) (expand others e) @ push_locals q others
+    | (_, DVar e)::q -> eval_expr false ([]::env) (expand others e) @ push_locals q others
     | (s, DFun _)::q -> LDF s :: push_locals q others
     | [] -> []
     in
@@ -87,7 +103,7 @@ let rec compile env (loc, e) =
         while !branches <> [] do
             let (label, e) = List.hd !branches in
             branches := List.tl !branches;
-            bcode := !bcode @ [ Label label ] @ eval_expr env e @ [ JOIN ];
+            bcode := !bcode @ [ Label label ] @ eval_expr false env e @ [ JOIN ];
         done;
         !bcode
     in
@@ -101,7 +117,7 @@ let rec compile env (loc, e) =
     in
     if loc = []
     then begin
-        let exprcode = eval_expr env e in 
+        let exprcode = eval_expr true env e in 
         exprcode @ [ RTN ] @ compile_branches env
     end
     else
@@ -112,9 +128,9 @@ let rec compile env (loc, e) =
         let exprcode = 
             (DUM (List.length loc)
                 :: (push_locals loc loc)) @
-                [ LDF label; RAP (List.length loc); RTN;
-                  Label label ] 
-                @ (eval_expr (loc :: env) e)
+                [ LDF label; TRAP (List.length loc);
+                  Label label ]
+                @ (eval_expr true (loc :: env) e)
                 @ [ RTN ]
         in exprcode
             @ compile_branches (loc :: env)
@@ -133,9 +149,14 @@ let print_stripped code =
     (String.concat ""
         (List.map 
             (fun i -> match i with
-                Label _ -> ""
-                | LDF s -> "LDF " ^ string_of_int (List.assoc s labels) ^ "\n"
-                | SEL (a,b) -> "SEL " ^ string_of_int (List.assoc a labels) ^ " " ^ string_of_int (List.assoc b labels) ^ "\n"
+                Label s -> "" (*"; " ^ s ^ " \n"*)
+                | LDF s -> "LDF " ^ string_of_int (List.assoc s labels) ^ "; ->"
+                ^ s ^ "\n"
+                | SEL (a,b) -> "SEL " ^ string_of_int (List.assoc a labels) ^ "
+                " ^ string_of_int (List.assoc b labels) ^ "; ->" ^ a ^ "," ^ b
+                ^ "\n"
+                | TSEL (a,b) -> "TSEL " ^ string_of_int (List.assoc a labels) ^ " " ^ string_of_int (List.assoc b labels) ^ "; ->" ^ a ^ "," ^ b
+                ^ "\n"
                 | _ -> pp_instr i ^ "\n")
             code))
 

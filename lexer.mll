@@ -14,6 +14,7 @@
             ("rec", REC); ("fun", FUN);
             ("in", IN); ("var", VAR);
             ("hd", HD); ("tl", TL);
+            ("isempty", ATOM);
             ("print", PRINT); ("return", RETURN)
         ]
 }

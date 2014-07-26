@@ -11,6 +11,7 @@ type instr =
     | RTN
     | DUM of int | RAP of int
     | DBUG | STOP
+    | TSEL of string * string | TAP of int | TRAP of int
 
 let pp_instr i =
     match i with
@@ -28,10 +29,13 @@ let pp_instr i =
     | CONS -> "CONS"
     | CAR -> "CAR"
     | CDR -> "CDR"
+    | TSEL (a,b) -> "TSEL " ^ a ^ " " ^ b
     | SEL (a,b) -> "SEL " ^ a ^ " " ^ b
     | JOIN -> "JOIN"
     | AP n -> "AP " ^ string_of_int n
+    | TAP n -> "TAP " ^ string_of_int n
     | RAP n -> "RAP " ^ string_of_int n
+    | TRAP n -> "TRAP " ^ string_of_int n
     | LDF s -> "LDF " ^ s
     | RTN -> "RTN"
     | DUM n -> "DUM " ^ string_of_int n

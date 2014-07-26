@@ -5,7 +5,7 @@
 %token LPAREN RPAREN LBRACKET RBRACKET LACCO RACCO COMMA SEMICOLON COLON
 %token FOR TO DO DONE LET EQUALS IF THEN ELSE REC FUN ARROW LEFTARROW IN
 %token EOF RETURN VAR DOUBLEEQUALS GREATER LESS GREATEREQUALS LESSEQUALS
-%token PRINT
+%token PRINT ATOM
 
 %left DOUBLEEQUALS GREATER LESS GREATEREQUALS LESSEQUALS
 %left PLUS MINUS        /* lowest precedence */
@@ -74,6 +74,7 @@ expr: a = expr PLUS b = expr { Add(a,b) }
     | a = expr DOT HD { Head a }
     | a = expr DOT TL { Tail a }
     | PRINT a = expr { Print a }
+    | ATOM LPAREN a = expr RPAREN { Atom a }
     | LPAREN e = main_expr RPAREN { e }
     | f = ID LPAREN args = separated_list(COMMA, expr) RPAREN { Call(f,args) }
     | LPAREN a = expr COMMA l = separated_nonempty_list(COMMA, expr) RPAREN { consize(a::l) }
