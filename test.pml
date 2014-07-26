@@ -1,7 +1,7 @@
-var up = 0
-var right = 1
-var down = 2
-var left = 3
+let up = 0 in
+let right = 1 in
+let down = 2 in
+let left = 3 in
 
 fun nth(l,n) {
     if n == 0
@@ -25,7 +25,7 @@ fun advance(x,y,dir) {
 
 fun getNextCell(map,x,y,dir)
 {
-    var npos = advance(x,y,dir)
+    let npos = advance(x,y,dir) in
     getCell(map, npos[0], npos[1])
 }
 
@@ -35,11 +35,12 @@ fun or(a,b) { a + b - a * b }
 
 fun isCrossing(map,x,y)
 {
-    var nfree = 
+    let nfree = 
         (getNextCell(map,x,y,up) > 0)
         + (getNextCell(map,x,y,down) > 0)
         + (getNextCell(map,x,y,left) > 0)
         + (getNextCell(map,x,y,right) > 0)
+    in
 
     nfree > 2
 }
@@ -54,7 +55,8 @@ fun opp(dir)
 
 fun rot(dir,n)
 {
-    var ndir = dir + n
+    let ndir = dir + n in
+
     if ndir > 3 then ndir-4 else ndir
 }
 
@@ -64,16 +66,11 @@ fun pill(c)
 }
 
 fun step(s,world) {
-    var map = world[0|4]
+    let map, lambdaman, ghost, fruit = world in
+    let vitality, location, dir, lives, score = lambdaman in
+    let x, y = location in
 
-    var lambdaman = world[1|4]
-    var x = world[1|4][1|5][0]
-    var y = world[1|4][1|5][1]
-    var dir = world[1|4][2|5]
-
-    var ghosts = world[2|4]
-
-    var fruit = world[3|4]
+    print (lambdaman, x, y, dir) ;
 
     if isCrossing(map,x,y)
     then 

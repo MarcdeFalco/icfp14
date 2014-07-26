@@ -16,6 +16,25 @@
 %{
 open Ast
 
+let rec chainize l =
+    match l with
+    | [] -> failwith "Invalid"
+    | [x] -> x
+    | t::q -> Chain(t, chainize(q))
+
+let rec consize l =
+    match l with
+    | [] -> failwith "Invalid"
+    | [x] -> x
+    | t::q -> Cons(t, consize(q))
+
+let split_var_tuple vl e =
+    let n = List.length vl in
+    let rec aux l i =
+        match l with
+        [] -> []
+        | t::q -> (t, DVar (Tuple(e,i,n)))::aux q (i+1)
+    in aux vl 0
 
 %}
 
@@ -24,12 +43,22 @@ open Ast
 
 main: t = body EOF { t }
 
-body: d = list(decl) r = expr { (d,r) }
+body: d = decl r = main_expr { (d,r) }
 
 decl:
-    | VAR v = ID EQUALS e = expr { (v, DVar e) }
-    | FUN f = ID LPAREN args = separated_list(COMMA, ID) RPAREN LACCO b = body RACCO  { (f, DFun(args,b)) }
+    | LET vl = separated_nonempty_list(COMMA,ID) EQUALS e = main_expr IN q = decl { split_var_tuple vl e @ q }
+    | LET vl = separated_nonempty_list(COMMA,ID) EQUALS e = main_expr { split_var_tuple vl e }
+    | t = base_decl q = decl { t::q }
+    | { [] }
     | error { raise (SyntaxError ("decl", $startpos, $endpos)) }
+
+base_decl:
+    | LET v = ID EQUALS e = main_expr IN { (v, DVar e) }
+    | FUN f = ID LPAREN args = separated_list(COMMA, ID) RPAREN LACCO b = body RACCO  { (f, DFun(args,b)) }
+    | error { raise (SyntaxError ("base_decl", $startpos, $endpos)) }
+
+main_expr: 
+    | l = separated_nonempty_list(SEMICOLON, expr) { chainize(l) }
 
 expr: a = expr PLUS b = expr { Add(a,b) }
     | a = expr TIMES b = expr { Mul(a,b) }
@@ -44,12 +73,11 @@ expr: a = expr PLUS b = expr { Add(a,b) }
     | a = expr LBRACKET b = INT RBRACKET { Tuple(a,b,2) }
     | a = expr DOT HD { Head a }
     | a = expr DOT TL { Tail a }
-    | LBRACKET a = expr RBRACKET{ Print a }
-    | LPAREN e = expr RPAREN { e }
+    | PRINT a = expr { Print a }
+    | LPAREN e = main_expr RPAREN { e }
     | f = ID LPAREN args = separated_list(COMMA, expr) RPAREN { Call(f,args) }
-    | LPAREN a = expr COMMA b = expr RPAREN { Cons(a,b) }
+    | LPAREN a = expr COMMA l = separated_nonempty_list(COMMA, expr) RPAREN { consize(a::l) }
     | c = INT { Const c }
     | v = ID { Var v }
     | IF cond = expr THEN bthen = expr ELSE belse = expr { If(cond,bthen,belse) }
-    | a = expr SEMICOLON b = expr { Chain(a, b) }
     | error { raise (SyntaxError ("expr", $startpos, $endpos)) }

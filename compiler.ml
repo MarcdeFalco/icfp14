@@ -13,7 +13,7 @@ let rec compile env (loc, e) =
     in
     let rec lookup env s n =
         match env with
-        | [] -> raise Not_found
+        | [] -> failwith ("Invalid lookup: " ^ s)
         | loc::q ->
             if List.mem_assoc s loc
             then let m = get_idx s loc in
@@ -53,9 +53,33 @@ let rec compile env (loc, e) =
         | Chain(a,b) -> eval_expr env a @ eval_expr env b
         | Print a -> eval_expr env a @ [ DBUG ]
     in
-    let rec push_locals loc = match loc with
-    | (_, DVar e)::q -> eval_expr ([]::env) e @ push_locals q
-    | (s, DFun _)::q -> LDF s :: push_locals q
+    let rec expand loc e =
+        match e with
+        | Var s -> 
+            if List.mem_assoc s loc 
+            then let DVar ep = List.assoc s loc in expand loc ep
+            else Var s
+        | Cons(a,b) -> Cons(expand loc a, expand loc b)
+        | Add(a,b) -> Add(expand loc a, expand loc b)
+        | Sub(a,b) -> Sub(expand loc a, expand loc b)
+        | Mul(a,b) -> Mul(expand loc a, expand loc b)
+        | Div(a,b) -> Div(expand loc a, expand loc b)
+        | Tuple(e,i,l) -> Tuple(expand loc e, i, l)
+        | Head a -> Head (expand loc a)
+        | Tail a -> Tail (expand loc a)
+        | Call(f,el) -> Call(f, List.map (expand loc) el)
+        | Equals(a,b) -> Equals(expand loc a, expand loc b)
+        | Greater(a,b) -> Greater(expand loc a, expand loc b)
+        | GreaterEquals(a,b) -> GreaterEquals(expand loc a, expand loc b)
+        | If(a,b,c) -> If(expand loc a, expand loc b, expand loc c)
+        | Chain(a,b) -> Chain(expand loc a, expand loc b)
+        | Print a -> Print (expand loc a)
+        | _ -> e
+    in
+        
+    let rec push_locals loc others = match loc with
+    | (_, DVar e)::q -> eval_expr ([]::env) (expand others e) @ push_locals q others
+    | (s, DFun _)::q -> LDF s :: push_locals q others
     | [] -> []
     in
     let compile_branches env =
@@ -87,7 +111,7 @@ let rec compile env (loc, e) =
         incr lbl;
         let exprcode = 
             (DUM (List.length loc)
-                :: (push_locals loc)) @
+                :: (push_locals loc loc)) @
                 [ LDF label; RAP (List.length loc); RTN;
                   Label label ] 
                 @ (eval_expr (loc :: env) e)
@@ -128,6 +152,12 @@ let _ =
         (*print_string "\n\nStripped:\n";*)
         print_stripped code
     with Ast.SyntaxError(loc,startpos,endpos) ->
-        Printf.printf "Syntax error while parsing a %s rule:\n%s\n"
-            loc (String.sub s startpos.pos_cnum
-            (endpos.pos_cnum-startpos.pos_cnum))
+        let a = startpos.pos_cnum in
+        let b = endpos.pos_cnum in
+        let n = String.length s in
+        let context = 20 in
+        let a0 = max 0 (a - context) in
+        let b0 = min (n-1) (b + context) in
+        let sub a b = String.sub s a (b-a) in
+        Printf.printf "Syntax error while parsing a %s rule:\n%s***%s***%s\n"
+            loc (sub a0 a) (sub a b) (sub b b0)
