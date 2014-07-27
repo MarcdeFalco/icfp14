@@ -80,12 +80,12 @@ b*)expr: a = expr PLUS b = expr { Add(a,b) }
     | a = expr LBRACKET b = INT RBRACKET { Tuple(a,b,2) }
     | a = expr DOT HD { Head a }
     | a = expr DOT TL { Tail a }
+    | a = expr DOT ATOM { Atom a }
     | LPAREN RPAREN { Nop }
     | LBRACKET l = separated_list(SEMICOLON, expr) RBRACKET { listize(l) }
     | RETURN a = expr { Chain(Print a, a) }
     | PRINT a = expr { Print a }
     | v = ID LEFTARROW a = expr { Assign(v,a) }
-    | ATOM LPAREN a = expr RPAREN { Atom a }
     | LPAREN e = main_expr RPAREN { e }
     | f = ID LPAREN args = separated_list(COMMA, expr) RPAREN { Call(f,args) }
     | LPAREN a = expr COMMA l = separated_nonempty_list(COMMA, expr) RPAREN { consize(a::l) }

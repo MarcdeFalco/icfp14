@@ -510,5 +510,7 @@ let _ =
             Gccsim.dump_machine lambdaman.mac;
             raise e
         end
-    | e -> Printf.printf "Score :%d (tickcount : %d, max cycle : %d)\n" lambdaman.score
+    | e -> 
+        Gccsim.dump_machine lambdaman.mac;
+        Printf.printf "Score :%d (tickcount : %d, max cycle : %d)\n" lambdaman.score
         !tickcount !cyclemax; raise e

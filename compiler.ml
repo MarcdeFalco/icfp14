@@ -3,6 +3,7 @@ open Gcc
 
 let lbl = ref 0
 let iflbl = ref 0
+let flblcount = ref 0
 
 let currentPos = ref (0,0)
 
@@ -98,10 +99,16 @@ let rec compile env (loc, e) =
         | Atom a -> Atom (expand loc a)
         | _ -> e
     in
+
+    let labels = ref [] in
         
     let rec push_locals loc others = match loc with
     | (_, DVar e)::q -> eval_expr false ([]::env) (expand others e) @ push_locals q others
-    | (s, DFun _)::q -> LDFs s :: push_locals q others
+    | (s, DFun (al,b))::q -> 
+            let lbl = s ^ string_of_int !flblcount in
+            incr flblcount;
+            labels := ((al,b), lbl) :: !labels;
+            LDFs lbl :: push_locals q others
     | [] -> []
     in
     let compile_branches env =
@@ -119,7 +126,8 @@ let rec compile env (loc, e) =
         | (_, DVar _)::q -> compile_fun env q
         | (s, DFun(al, b))::q ->
                 let nenv = (List.map (fun s -> (s, DDummy)) al) :: env in
-                (Label s :: compile nenv b) @ compile_fun env q
+                let funcode = Label (List.assoc (al,b) !labels) :: compile nenv b in
+                funcode @ compile_fun env q
     in
     if loc = []
     then begin
@@ -146,42 +154,49 @@ let rec compile env (loc, e) =
 let compile_file fn =
     Printexc.record_backtrace true;
 
-    let f = open_in "constantmem.pml" in
-    let sz = in_channel_length f in
-    let sprel = String.make sz ' ' in
-    really_input f sprel 0 sz;
+    let s = ref "" in
 
-    let f = open_in fn in
-    let sz = in_channel_length f in
-    let scode = String.make sz ' ' in
-    really_input f scode 0 sz;
+    let load fn =
+        let f = open_in fn in
+        let sz = in_channel_length f in
+        let sloaded = String.make sz ' ' in
+        really_input f sloaded 0 sz;
+        sloaded
+    in
 
-    let s = sprel ^ scode in
+    let fjoin = open_in "lambdaman.join" in
+    begin try
+        while true do
+            let l = input_line fjoin in
+            if l.[0] <> ';'
+            then s := !s ^ load l
+        done;
+        failwith "Out of reach"
+    with End_of_file -> () end;
 
     try
-        let l = Parser.main Lexer.token (Lexing.from_string s) in
+        let l = Parser.main Lexer.token (Lexing.from_string !s) in
         let code = compile [[("world", DDummy); ("unk", DDummy)]] l in
         let acode = absolute code in
-        acode, s
+        acode, !s
     with Ast.SyntaxError(loc,startpos,endpos) ->
-        let a = startpos.pos_cnum in
-        let b = endpos.pos_cnum in
-        let n = String.length s in
+        let n = String.length !s in
+        let a = min (n-1) startpos.pos_cnum in
+        let b = min (n-1) (max a endpos.pos_cnum) in
         let context = 20 in
         let a0 = max 0 (a - context) in
         let b0 = min (n-1) (b + context) in
-        let sub a b = String.sub s a (b-a) in
+        let sub a b = String.sub !s a (b-a) in
         Printf.printf "Syntax error while parsing a %s rule:\n%s***%s***%s\n"
             loc (sub a0 a) (sub a b) (sub b b0);
         failwith "Syntax error"
     | e ->
         let a, b  = !currentPos in
-        let n = String.length s in
+        let n = String.length !s in
         let context = 20 in
         let a0 = max 0 (a - context) in
         let b0 = min (n-1) (b + context) in
-        let sub a b = String.sub s a (b-a) in
+        let sub a b = String.sub !s a (b-a) in
         Printf.printf "Error while compiling:\n%s***%s***%s\n"
             (sub a0 a) (sub a b) (sub b b0);
         raise e
-

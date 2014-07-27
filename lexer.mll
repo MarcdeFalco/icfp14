@@ -27,6 +27,7 @@ rule token = parse
 | "->" { ARROW }
 | "<-" { LEFTARROW }
 | '+' { PLUS }
+| '+' { PLUS }
 | '-' { MINUS }
 | '*' { TIMES }
 | '/' { DIV }

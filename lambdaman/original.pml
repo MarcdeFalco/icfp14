@@ -51,41 +51,41 @@ let map, lambdaman, ghost, fruit = world in
 
 fun eq(x,y)
 {
-    if isempty(x) * isempty(y)
+    if x.isempty * y.isempty
     then x == y
     else (x[0] == y[0]) * (x[1] == y[1])
 }
 
 fun notmem(l,x)
 {
-    if isempty(l)
+    if l.isempty
     then 1
     else if eq(x, l.hd) then 0 else notmem(l.tl,x)
 }
 
 fun mem(l,x)
 {
-    if isempty(l)
+    if l.isempty
     then 0
     else if eq(x, l.hd) then 1 else mem(l.tl,x)
 }
 
 fun prefix(l,n)
 {
-    if or(isempty(l), n==0)
+    if or(l.isempty, n==0)
     then []
     else (l.hd, prefix(l.tl,n-1))
 }
 
 fun filter(f,l)
 {
-    if isempty(l) then []
+    if l.isempty then []
     else (if f(l.hd) then (l.hd, filter(f,l.tl)) else filter(f,l.tl))
 }
 
 fun occ(l,x)
 {
-    if isempty(l)
+    if l.isempty
     then 0
     else (if eq(x, l.hd) then 1 else 0) + occ(l.tl,x)
 }
@@ -119,7 +119,7 @@ fun getNextCell(x,y,dir)
 
 fun iter(l,f)
 {
-    if isempty(l) then ()
+    if l.isempty then ()
     else (f(l.hd); iter(l.tl,f))
 }
 
@@ -131,7 +131,7 @@ fun length(l)
 {
     fun auxLength(l,a)
     {
-        if isempty(l)
+        if l.isempty
         then a
         else auxLength(l.tl,1+a)
     }
@@ -184,7 +184,7 @@ fun max4i(a,b,c,d)
 
 fun loadRows(l,i)
 {
-    if isempty(l)
+    if l.isempty
     then ()
     else (
         map_set(i,l.hd);
@@ -202,7 +202,7 @@ fun ghostIn(x,y,g)
 
 fun isGhost(x,y,ghosts)
 {
-    if isempty(ghosts)
+    if ghosts.isempty
     then 0
     else ghostIn(x,y,ghosts.hd) + isGhost(x,y,ghosts.tl)
 }
@@ -293,7 +293,7 @@ fun step(s,world) {
         let grade = 0 in
         let nx, ny = advance(x,y,d) in 
 
-        let pills, powerpills, fruit, nghosts = walk(world,10,(x,y),d) in
+        let pills, powerpills, fruit, nghosts = walk(world,20,(x,y),d) in
 
         let c = nextCell(d) in
 
@@ -346,13 +346,13 @@ fun step(s,world) {
         }
 
         fun auxY0(l, y0) {
-            if isempty(l)
+            if l.isempty
             then ()
             else (auxX0(l.hd,0,y0); auxY0(l.tl,y0+1))
         }
 
         fun auxX0(l, x0, y0) {
-            if isempty(l)
+            if l.isempty
             then ()
             else (evalCell(x0,y0); auxX0(l.tl, x0+1, y0))
         }
@@ -461,7 +461,7 @@ fun inSameCone(x0,y0,dir,ghost)
 
 fun countGhostsInCone(x,y,dir,ghosts)
 {
-    if isempty(ghosts)
+    if ghosts.isempty
     then 0
     else inSameCone(x,y,dir,ghosts.hd) + countGhostsInCone(x,y,dir,ghosts.tl)
 }
@@ -510,7 +510,7 @@ fun countCone(map,ghosts,fruit,powered,x,y,dir)
 }
 
 fun list_map(f,l) {
-    if isempty(l)
+    if l.isempty
     then 0
     else ( f(l.hd), list_map(f,l.tl) )
 }
@@ -535,12 +535,12 @@ fun listDir(map,x0,y0)
 
 fun cacheDir(map) {
     fun auxY(l, y) {
-        if isempty(l)
+        if l.isempty
         then 0
         else (auxX(l.hd,0,y), auxY(l.tl,y+1))
     }
     fun auxX(l, x, y) {
-        if isempty(l)
+        if l.isempty
         then 0
         else (listDir(map,x,y), auxX(l.tl, x+1, y))
     }
@@ -564,7 +564,6 @@ fun walk(world,depth_max,pos,d)
 
     fun next_walk()
     {
-        (* if isempty(tovisit) *)
         if queue_empty()
         then ()
         else (do_walk(queue_pop()))
