@@ -176,6 +176,7 @@ let ghost2 = [|
     MOV(Reg 0, Const 1);
     INT(0);
     HLT;
+    INT(1);
     MOV(Reg 4, Reg 0);
 	MOV(Reg 5, Reg 1);
 	JEQ(57, Reg 2, Reg 4);
@@ -254,6 +255,7 @@ let ghost3 = [|
     MOV(Reg 0, Const 3);
     INT(0);
     HLT;
+    INT(1);
     MOV(Reg 4, Reg 0);
 	MOV(Reg 5, Reg 1);
 	JEQ(57, Reg 2, Reg 4);
@@ -332,6 +334,7 @@ let ghost4 = [|
     MOV(Reg 0, Const 1);
     INT(0);
     HLT;
+    INT(1);
     MOV(Reg 4, Reg 0);
 	MOV(Reg 5, Reg 1);
 	JEQ(57, Reg 2, Reg 4);
