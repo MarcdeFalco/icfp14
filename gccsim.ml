@@ -28,11 +28,9 @@ let dummy_machine () =
 
 let rec print_data d = match d with
     | Int n -> print_int n
-    | Cons (a,b) -> print_string "(";
-        print_data a;
+    | Cons (a,b) -> print_data a;
         print_string ",";
-        print_data b;
-        print_string ")"
+        print_data b
     | Closure (a,_) -> print_string "<";
         print_int a;
         print_string ",env>"

@@ -89,3 +89,41 @@ fun map_dist_cell_set(x,y,v)
 {
     map_dist_set(y, replace(map_dist_get(y),x,v))
 }
+
+fun print_map()
+{
+    let i = 0 in
+
+    fun next_row()
+    {
+        let r = map_get(i) in
+        if r.isempty
+        then ()
+        else (
+            print r;
+            i <- i + 1;
+            next_row ()
+        )
+    }
+
+    next_row()
+}
+
+fun print_map_dist()
+{
+    let i = 0 in
+
+    fun next_row()
+    {
+        let r = map_dist_get(i) in
+        if r.isempty
+        then ()
+        else (
+            print r;
+            i <- i + 1;
+            next_row ()
+        )
+    }
+
+    next_row()
+}

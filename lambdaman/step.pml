@@ -2,16 +2,28 @@ let depth_max = 8 in
 
 fun setup_depth_max(map)
 {
-    let w = length(map) in
-    let h = length(map.hd) in
+    let h = length(map) in
+    let w = length(map.hd) in
 
-    if h < 10
-    then depth_max <- 40
-    else if h < 20
-    then depth_max <- 20
-    else if h < 30
-    then depth_max <- 10
-    else depth_max <- 8
+    if w < 10
+    then depth_max <- 1000 else ();
+
+    if w >= 10
+    then depth_max <- 100 else ();
+
+    if w >= 20
+    then depth_max <- 100 else ();
+
+    if w >= 25
+    then depth_max <- 30 else ();
+
+    if w >= 30
+    then depth_max <- 10 else ();
+
+    if w >= 50
+    then depth_max <- 8 else ();
+    
+    ()
 }
 
 let closest_pill = 0 in
@@ -102,18 +114,64 @@ fun fill_map_dist(pos)
     next_walk()
 }
 
-fun load_ghosts(ghosts)
+fun free(x,y)
+{
+    let n = 0 in
+
+    let nxu,nyu = advance(x,y,up) in
+    let nxd,nyd = advance(x,y,down) in
+    let nxl,nyl = advance(x,y,left) in
+    let nxr,nyr = advance(x,y,right) in
+
+    if map_cell(nxu,nyu) > 0 then n <- n + 1 else ();
+    if map_cell(nxd,nyd) > 0 then n <- n + 1 else ();
+    if map_cell(nxr,nyr) > 0 then n <- n + 1 else ();
+    if map_cell(nxl,nyl) > 0 then n <- n + 1 else ();
+    n
+}
+
+fun load_ghosts(xl,yl,ghosts)
 {
     fun load_ghost(g)
     {
+        fun wall_ghost(x,y,d,n)
+        {
+            let nx,ny = advance(x,y,d) in
+            let nxu,nyu = advance(x,y,up) in
+            let nxd,nyd = advance(x,y,down) in
+            let nxl,nyl = advance(x,y,left) in
+            let nxr,nyr = advance(x,y,right) in
+
+            if n == 0
+            then ()
+            else if and(not(and(x==xl,y==yl)),map_cell(x,y) > 0)
+             then (
+                map_cell_set(x,y,cell_wall);
+                if free(x,y) == 1
+                then 
+                    if map_cell(nx,ny) > 0
+                    then wall_ghost(nx, ny, d, n-1)
+                    else 
+                        if map_cell(nxu,nyu) > 0
+                        then wall_ghost(nxu, nyu, up, n-1)
+                        else if map_cell(nxd,nyd) > 0
+                        then wall_ghost(nxd, nyd, down, n-1)
+                        else if map_cell(nxl,nyl) > 0
+                        then wall_ghost(nxl, nyl, left, n-1)
+                        else if map_cell(nxr,nyr) > 0
+                        then wall_ghost(nxr, nyr, right, n-1)
+                    else ()
+                else ()
+             ) else ()
+        }
+
         let vit, pos, gdir = g in
         let x,y = pos in
         let nx,ny = advance(x,y,gdir) in
 
         if vit == ghost_standard
         then (
-            map_cell_set(x,y,cell_wall);
-            map_cell_set(nx,ny,cell_wall)
+            wall_ghost(x, y, gdir, 5)
         ) else if vit == ghost_fright
         then (
             map_cell_set(x,y,cell_ghost);
@@ -123,7 +181,7 @@ fun load_ghosts(ghosts)
     
     if ghosts.isempty
     then ()
-    else ( load_ghost(ghosts.hd); load_ghosts(ghosts.tl) )
+    else ( load_ghost(ghosts.hd); load_ghosts(xl,yl,ghosts.tl) )
 }
 
 fun closest_target()
@@ -200,11 +258,20 @@ fun step(s,world)
 
     fruit <- step_fruit;
 
+    setup_depth_max(map);
     init_closest();
     map_visit_incr(x,y);
     load_map(map);
-    load_ghosts(ghosts);
+    load_ghosts(x,y,ghosts);
+    (*
+    print_map();
+    print 0;
+    *)
     init_map_dist(map);
     fill_map_dist(location);
+    (*
+    print_map_dist();
+    print 1;
+    *)
     (s, reach_target())
 }

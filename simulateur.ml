@@ -235,7 +235,7 @@ let _ =
         else Printf.fprintf fo "%s\n" s
     done;
     close_out fo;
-    let ghosts_code = [| Ghc.ghost1 |] in
+    let ghosts_code = [| Ghc.random |] in
     let lambdaman_start = init_lambdaman lambdaman_code in
     let ghosts_start = init_ghosts ghosts_code in
     show_map ();

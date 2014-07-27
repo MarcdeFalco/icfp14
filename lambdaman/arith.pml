@@ -11,3 +11,8 @@ fun advance(x,y,dir) {
     then (x,y+1)
     else (x+1,y)
 }
+fun advance2(x,y,dir)
+{
+    let x0, y0 = advance(x,y,dir) in
+    advance(x0,y0,dir)
+}
