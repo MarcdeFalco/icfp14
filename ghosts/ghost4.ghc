@@ -1,5 +1,5 @@
-MOV H,3 ; H - ghost type
 INT 3
+MOV H,A ; H - ghost number
 INT 5 ; Get current position
 MOV C,A ; C - Current X
 MOV D,B ; D - Current Y
