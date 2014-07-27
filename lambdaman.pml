@@ -1,3 +1,27 @@
+let queue_start = 0 in
+let queue_end = 0 in
+let queue_size = 1000 in
+fun queue_push(v)
+{
+    queue_set(queue_end, v);
+    queue_end <- mod(queue_end+1, queue_size)
+}
+fun queue_pop(v)
+{
+    let v = queue_get(queue_start) in
+    queue_start <- mod(queue_start+1, queue_size);
+    v
+}
+fun queue_clear()
+{
+    queue_start <- 0;
+    queue_end <- 0
+}
+fun queue_empty()
+{
+    queue_start == queue_end
+}
+
 let up = 0 in
 let right = 1 in
 let down = 2 in
@@ -72,8 +96,8 @@ fun nth(l,n) {
     else nth(l.tl,n-1)
 }
 
-fun getCell(map,x,y) {
-    nth(aget(y),x)
+fun getCell(x,y) {
+    nth(map_get(y),x)
     (* nth(nth(map,y),x) *)
 }
 
@@ -87,10 +111,10 @@ fun advance(x,y,dir) {
     else (x+1,y)
 }
 
-fun getNextCell(map,x,y,dir)
+fun getNextCell(x,y,dir)
 {
     let nx, ny = advance(x,y,dir) in
-    getCell(map, nx, ny)
+    getCell(nx, ny)
 }
 
 fun iter(l,f)
@@ -163,7 +187,7 @@ fun loadRows(l,i)
     if isempty(l)
     then ()
     else (
-        aset(i,l.hd);
+        map_set(i,l.hd);
         loadRows(l.tl,i+1)
     )
 }
@@ -202,8 +226,8 @@ fun step(s,world) {
     {
         let nx, ny = advance(x,y,d) in 
         if vitality > 0
-        then getCell(map,nx,ny) > 0
-        else and(getCell(map,nx,ny) > 0, isGhost(nx,ny,ghosts) == 0)
+        then getCell(nx,ny) > 0
+        else and(getCell(nx,ny) > 0, isGhost(nx,ny,ghosts) == 0)
     }
 
     fun pillNoGhost(map,x,y,d)
@@ -211,8 +235,8 @@ fun step(s,world) {
         let nx, ny = advance(x,y,d) in 
 
         if vitality > 0
-        then pill(getCell(map,nx,ny))
-        else and(pill(getCell(map,nx,ny)), isGhost(nx,ny,ghosts) == 0)
+        then pill(getCell(nx,ny))
+        else and(pill(getCell(nx,ny)), isGhost(nx,ny,ghosts) == 0)
     }
         
     fun getAvailableDir()
@@ -233,7 +257,7 @@ fun step(s,world) {
 
     fun nextCell(d) {
         let nx, ny = advance(x,y,d) in
-        getCell(map,nx,ny)
+        getCell(nx,ny)
     }
 
     fun gradeDirLight(d)
@@ -269,7 +293,7 @@ fun step(s,world) {
         let grade = 0 in
         let nx, ny = advance(x,y,d) in 
 
-        let pills, powerpills, fruit, nghosts = walk(world,5,(x,y),d) in
+        let pills, powerpills, fruit, nghosts = walk(world,10,(x,y),d) in
 
         let c = nextCell(d) in
 
@@ -308,10 +332,10 @@ fun step(s,world) {
         let bestdir = l.hd in
         let bestdirdist = 256 * 256 in
 
-        fun evalCell(map,x0,y0)
+        fun evalCell(x0,y0)
         {
             let x, y = location in
-            let c = getCell(map,x0,y0) in
+            let c = getCell(x0,y0) in
             let dist = max(abs(x-x0),abs(y-y0)) in
 
             if and(or(pill(c),or(and(vitality > 0,isGhost(x,y,ghosts)),and(fruit>0,c==cell_fruit))), dist < bestdist)
@@ -330,7 +354,7 @@ fun step(s,world) {
         fun auxX0(l, x0, y0) {
             if isempty(l)
             then ()
-            else (evalCell(map,x0,y0); auxX0(l.tl, x0+1, y0))
+            else (evalCell(x0,y0); auxX0(l.tl, x0+1, y0))
         }
 
         fun evalDir0(dg)
@@ -453,9 +477,9 @@ fun countCone(map,ghosts,fruit,powered,x,y,dir)
     fun eval(x,y)
     {
         if valid(X,Y,x,y)
-        then if getCell(map,x,y) == cell_pill then 1
-        else if getCell(map,x,y) == cell_powerpill then 10
-        else if and(fruit > 0, getCell(map,x,y) == cell_fruit) then fruit / 2
+        then if getCell(x,y) == cell_pill then 1
+        else if getCell(x,y) == cell_powerpill then 10
+        else if and(fruit > 0, getCell(x,y) == cell_fruit) then fruit / 2
              else 0
         else 0
     }
@@ -480,7 +504,7 @@ fun countCone(map,ghosts,fruit,powered,x,y,dir)
 
     let nx, ny = advance(x,y,dir) in
 
-    if and(getCell(map,nx,ny)> 0, isGhost(nx,ny,ghosts) <= powered)
+    if and(getCell(nx,ny)> 0, isGhost(nx,ny,ghosts) <= powered)
     then aux(x,y,1) + (if powered > 0 then powered else 0 - 100) * countGhostsInCone(x,y,dir,ghosts)
     else 0 - 100000
 }
@@ -495,15 +519,15 @@ fun listDir(map,x0,y0)
 {
     let l = [] in
 
-    if getCell(map,x0,y0) > 0
+    if getCell(x0,y0) > 0
     then (
-        if getNextCell(map,x0,y0,up) > 0
+        if getNextCell(x0,y0,up) > 0
         then l <- (up, l) else ();
-        if getNextCell(map,x0,y0,right) > 0
+        if getNextCell(x0,y0,right) > 0
         then l <- (right, l) else ();
-        if getNextCell(map,x0,y0,down) > 0
+        if getNextCell(x0,y0,down) > 0
         then l <- (down, l) else ();
-        if getNextCell(map,x0,y0,left) > 0
+        if getNextCell(x0,y0,left) > 0
         then l <- (left, l) else ()
     ) else ();
     l
@@ -533,27 +557,34 @@ fun walk(world,depth_max,pos,d)
     let fruit = 0 in
     let nghosts = 0 in
 
+    (*
     let tovisit = ( (advance(pos[0],pos[1],d),0), 0 ) in
+    *)
     let visited = [ pos ] in
 
     fun next_walk()
     {
-        if isempty(tovisit)
+        (* if isempty(tovisit) *)
+        if queue_empty()
         then ()
-        else (do_walk((tovisit.hd)[0], (tovisit.hd)[1]))
+        else (do_walk(queue_pop()))
     }
 
-    fun do_walk(pos, depth)
+    fun do_walk(a)
     {
+        let pos, depth = a in
         let x, y = pos in
         let posUp = advance(x,y,up) in
         let posDown = advance(x,y,down) in
         let posLeft = advance(x,y,left) in
         let posRight = advance(x,y,right) in
-        let c = getCell(map,x,y) in
+        let c = getCell(x,y) in
         let nghostsincell = isGhost(x,y,ghosts) in
     
-        tovisit <- tovisit.tl;
+        (* tovisit <- tovisit.tl; *)
+        if mem(visited,pos)
+        then ()
+        else (
         visited <- (pos, visited);
 
         nghosts <- nghosts + nghostsincell;
@@ -566,23 +597,22 @@ fun walk(world,depth_max,pos,d)
 
         if and(c > 0, depth < depth_max)
         then (
-            (if notmem(visited,posUp)
-            then tovisit <- ( (posUp, depth+1), tovisit )
-            else ());
-            (if notmem(visited,posDown)
-            then tovisit <- ( (posDown, depth+1), tovisit )
-            else ());
-            (if notmem(visited,posLeft)
-            then tovisit <- ( (posLeft, depth+1), tovisit )
-            else ());
-            (if notmem(visited,posRight)
-            then tovisit <- ( (posRight, depth+1), tovisit )
-            else ())
+             if mem(visited,posUp) then ()
+            else queue_push( (posUp, depth+1) );
+            if mem(visited,posDown) then ()
+            else queue_push( (posDown, depth+1) );
+            if mem(visited,posLeft) then ()
+            else queue_push( (posLeft, depth+1) );
+            if mem(visited,posRight) then ()
+            else queue_push( (posRight, depth+1) )
         ) else ();
 
         next_walk()
+        )
     }
 
+    queue_clear();
+    queue_push( (advance(pos[0],pos[1],d),0) );
     next_walk();
     (pills, powerpills, fruit, nghosts)
 }

@@ -200,6 +200,7 @@ let encode_world () =
 exception FoundPill
 
 let _ =
+    let cyclemax = ref 0 in
     load_map Sys.argv.(1);
     let mapY = Array.length !map in
     let mapX = Array.length !map.(0) in
@@ -255,10 +256,11 @@ let _ =
     let run_lambdaman () =
         let gccworld = encode_world () in
 
-        let new_state, dir = 
+        let new_state, dir, cycle = 
             Gccsim.step lambdaman.mac lambdaman.state gccworld step_closure in
         lambdaman.state <- new_state;
-        lambdaman.dir <- dir
+        lambdaman.dir <- dir;
+        cyclemax := max !cyclemax cycle
     in
 
     let run_ghosts i =
@@ -508,5 +510,5 @@ let _ =
             Gccsim.dump_machine lambdaman.mac;
             raise e
         end
-    | e -> Printf.printf "Score :%d (tickcount : %d)\n" lambdaman.score
-        !tickcount; raise e
+    | e -> Printf.printf "Score :%d (tickcount : %d, max cycle : %d)\n" lambdaman.score
+        !tickcount !cyclemax; raise e

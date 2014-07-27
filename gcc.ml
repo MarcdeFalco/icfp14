@@ -12,11 +12,11 @@ type instr =
     | TSELs of string * string 
     | TSEL of int * int 
     | JOIN
-    | LDFs of string | LDF of int | AP of int
+    | LDFs of string | LDF of int | AP of string * int
     | RTN
     | DUM of int | RAP of int
     | DBUG | STOP
-    | TAP of int | TRAP of int
+    | TAP of string * int | TRAP of int
     | FILEINFO of int * int
 
 let pp_instr src i =
@@ -41,8 +41,8 @@ let pp_instr src i =
     | TSEL (a,b) -> "TSEL " ^ string_of_int a ^ " " ^ string_of_int b
     | SEL (a,b) -> "SEL " ^ string_of_int a ^ " " ^ string_of_int b
     | JOIN -> "JOIN"
-    | AP n -> "AP " ^ string_of_int n
-    | TAP n -> "TAP " ^ string_of_int n
+    | AP (_,n) -> "AP " ^ string_of_int n
+    | TAP (_,n) -> "TAP " ^ string_of_int n
     | RAP n -> "RAP " ^ string_of_int n
     | TRAP n -> "TRAP " ^ string_of_int n
     | LDFs s -> "LDF " ^ s

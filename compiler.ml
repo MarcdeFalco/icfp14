@@ -47,7 +47,7 @@ let rec compile env (loc, e) =
         | Call (f,el) ->
                 let n = List.length el in
                 List.concat (List.map (eval_expr false env) el)
-                @ [ lookup true env f 0; if bt then TAP n else AP n ]
+                @ [ lookup true env f 0; if bt then TAP (f,n) else AP (f,n) ]
         | Equals(a,b) -> eval_expr false env a @ eval_expr false env b @ [ CEQ ]
         | Greater(a,b) -> eval_expr false env a @ eval_expr false env b @ [ CGT ]
         | GreaterEquals(a,b) -> eval_expr false env a @ eval_expr false env b @ [ CGTE ]

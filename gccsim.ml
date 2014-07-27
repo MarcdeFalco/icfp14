@@ -87,6 +87,14 @@ exception UnhandledInstruction
 
 let currentPos = ref (0,0)
 
+let calls = Hashtbl.create 42 
+
+let register_call f tail =
+    if not (Hashtbl.mem calls f)
+    then  Hashtbl.add calls f (0,0);
+    let cb, ct = Hashtbl.find calls f in
+    Hashtbl.replace calls f (if tail then (cb,ct+1) else (cb+1,ct))
+
 let eval mac =
     let instr = mac.code.(mac.pc) in
     (*
@@ -155,7 +163,9 @@ let eval mac =
     | LDF f -> let c = Closure (f, mac.frame) in
         Stack.push c mac.data;
         mac.pc <- mac.pc + 1
-    | AP n -> let f, e = closofpop mac in
+    | AP (sf,n) -> 
+        register_call sf false;
+        let f, e = closofpop mac in
         let fp = { parent = e; locals = Array.create n (Int 42); dummy = false } in
         for i = n-1 downto 0 do
             fp.locals.(i) <- Stack.pop mac.data
@@ -188,7 +198,9 @@ let eval mac =
         mac.pc <- f
     | TSEL(t,f) -> let x = intofpop mac in
         mac.pc <- if x = 0 then f else t
-    | TAP n -> let f, e = closofpop mac in
+    | TAP (sf,n) -> 
+        register_call sf true;
+        let f, e = closofpop mac in
         let fp = { parent = e; locals = Array.create n (Int 42); dummy = false } in
         for i = n-1 downto 0 do
             fp.locals.(i) <- Stack.pop mac.data
@@ -222,13 +234,17 @@ exception CycleExceeded
 
 exception GccRun of string * (int * int)
 let run mac =
+    let cycle = ref 0 in
     try
-        let cycle = ref 0 in
+        Hashtbl.clear calls;
         while !cycle < 3072000 do
             incr cycle; eval mac
         done;
+        Hashtbl.iter 
+            (fun  f c -> let base, tail = c in Printf.printf "%s : %d + %d\n" f base tail)
+            calls;
         raise CycleExceeded
-    with MachineStop -> ()
+    with MachineStop -> !cycle
          | e -> let se = Printexc.to_string e in raise (GccRun(se, !currentPos))
 
 let main mac world codes =
@@ -250,7 +266,7 @@ let step mac state world step_closure =
     Stack.push Stop mac.control;
     mac.frame <- fp;
     mac.pc <- f;
-    run mac;
+    let cycle = run mac in
     (*dump_machine mac;*)
     let state, Int dir = consofpop mac in
-    (state, Common.dir_of_int dir)
+    (state, Common.dir_of_int dir, cycle)
