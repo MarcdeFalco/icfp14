@@ -57,58 +57,30 @@ let load_map fn =
         done
     done
 
-let adap_cell_size = ref 10
-
 let show_map () =
-    let cell_size = !adap_cell_size in
-    let height = Array.length !map in
     for y = 0 to Array.length !map - 1 do
         for x = 0 to Array.length !map.(0) - 1 do
             let cpos = {x=x;y=y} in
 
             let color = match !map.(y).(x) with
             | Wall -> blue | Empty -> white
-            | Pill -> red | Powerpill -> red
+            | Pill -> red | Powerpill -> yellow
             | Fruit -> if !fruit > 0 then green else white
             | LStart ->  white
             | GStart -> white in
 
-            set_color white;
-            fill_rect (cell_size*x) (cell_size * (height - y -1)) cell_size
-            cell_size;
             set_color color;
-
-            match !map.(y).(x) with
-            | Pill -> fill_circle (cell_size*x+cell_size/2) (cell_size * (height - y -1)+cell_size/2) (cell_size/5)
-            | Powerpill -> fill_circle (cell_size*x+cell_size/2) (cell_size * (height - y -1)+cell_size/2) (cell_size/3)
-            | _ -> fill_rect (cell_size*x) (cell_size * (height - y -1)) cell_size cell_size
+            fill_rect (20*x) (600 - 20*y) 20 20 
         done;
     done;
 
     set_color black;
-    let lx = (cell_size*lambdaman.pos.x) in
-    let ly = cell_size*(height-1-lambdaman.pos.y) in
-    set_line_width (cell_size/5);
-    moveto lx (ly+cell_size);
-    lineto (lx+cell_size) ly;
-    moveto lx ly;
-    lineto (lx+cell_size/2) (ly+cell_size/2);
-    (*
-    fill_rect (cell_size*lambdaman.pos.x+cell_size/4)
-    (cell_size*(height-lambdaman.pos.y)+cell_size/4) (cell_size/2)
-    (cell_size/2);
-    *)
+    fill_rect (20*lambdaman.pos.x+4) (600 - 20*lambdaman.pos.y+4) 12 12;
     for i = 0 to Array.length !ghosts - 1 do
         let g = !ghosts.(i) in
         let gpos = g.Ghcsim.pos in
-        if g.Ghcsim.vit = Ghcsim.Fright
-        then set_color green
-        else if g.Ghcsim.vit = Ghcsim.Standard
-        then set_color cyan
-        else set_color yellow;
-        fill_circle (cell_size*gpos.x+cell_size/2) (cell_size *
-        (height-gpos.y-1)+cell_size/2) (cell_size/2);
-        (*
+        set_color cyan;
+        fill_rect (20*gpos.x+4) (600 - 20*gpos.y+4) 12 12;
         if g.Ghcsim.vit = Ghcsim.Fright
         then set_color red
         else if g.Ghcsim.vit = Ghcsim.Invisible
@@ -116,18 +88,14 @@ let show_map () =
         else set_color black;
         moveto (20*gpos.x+4) (600 - 20*gpos.y+4);
         draw_string (string_of_int i)
-        *)
     done;
 
-    moveto 0 (3+cell_size * height);
+    moveto 0 620;
     set_color white;
-    fill_rect 0 (3+cell_size * height) 1000 20;
-    moveto 0 (3+cell_size * height);
+    fill_rect 0 620 100 20;
+    moveto 0 620;
     set_color black;
-    draw_string (Printf.sprintf
-        "tick:%d   score:%d"
-        !tickcount lambdaman.score)
-
+    draw_string (string_of_int !tickcount)
 
 let init_lambdaman code =
     Gccsim.init_machine lambdaman.mac code;
@@ -200,62 +168,35 @@ let encode_world () =
 exception FoundPill
 
 let _ =
-    load_map Sys.argv.(1);
+
+    load_map "map1.txt";
     let mapY = Array.length !map in
     let mapX = Array.length !map.(0) in
 
-    let level =
-        if (mapX * mapY) mod 100 = 0
-        then (mapX * mapY) / 100
-        else 1 + (mapX * mapY) / 100
-    in
-
-    let fruit_score_array = [| 0; 100; 300; 500; 500; 700; 700; 1000; 1000; 2000;
-            2000; 3000; 3000; 5000 |] in
-    let fruit_score = if level <= 12 then fruit_score_array.(level) else 5000
-    in
-
-
-    let m = max mapY mapX in
-    adap_cell_size := 1000 / m;
-
-    let cell_size = !adap_cell_size in
-    let szX = cell_size * mapX in
-    let szY = cell_size * mapY + 20 in
-    open_graph (Printf.sprintf " %dx%d" szX szY);
-    let lambdaman_code, lambdaman_source = Compiler.compile_file "lambdaman.pml" in
-
-    let fo = open_out "lambdaman.S" in
-    let icount = ref 0 in
+    open_graph " 1000x1000";
+    let lambdaman_code = Compiler.compile_file "lambdaman.pml" in
     for i = 0 to Array.length lambdaman_code - 1 do
-        let s = Gcc.pp_instr lambdaman_source lambdaman_code.(i) in
-        if s.[0] = ';' then 
-            Printf.fprintf fo "%s\n" (String.sub s 1 (String.length s - 1))
-        else Printf.fprintf fo "%s\n" s
+        Printf.printf "%s ; %d\n"
+            (Gcc.pp_instr lambdaman_code.(i)) i
     done;
-    close_out fo;
-    let ghosts_code = [| Ghc.random |] in
+    let ghosts_code = [| Ghc.fickle |] in
     let lambdaman_start = init_lambdaman lambdaman_code in
     let ghosts_start = init_ghosts ghosts_code in
     show_map ();
-    pause ();
     let gccworld = encode_world () in
     let gcccodes = Gccsim.Int 42 in
 
-    try
     let state, step_closure = Gccsim.main lambdaman.mac gccworld gcccodes in
     lambdaman.state <- state;
-    Printf.printf "Initial state: "; Gccsim.print_data state; print_newline ();
+
     let lam_tick = ref tick_lambda_normal in
     let ghosts_tick = Array.make (Array.length !ghosts) 0 in
     for i = 0 to Array.length !ghosts - 1 do
         ghosts_tick.(i) <- tick_ghosts.(i mod 4)
     done;
 
-
     let run_lambdaman () =
         let gccworld = encode_world () in
-
         let new_state, dir = 
             Gccsim.step lambdaman.mac lambdaman.state gccworld step_closure in
         lambdaman.state <- new_state;
@@ -312,10 +253,6 @@ let _ =
     let fright_mode = ref None in
     let gh_score = ref 0 in
 
-    let update = ref false in
-
-    let ghosts_eaten = ref 0 in
-
     while true do
         (* Step 1 *)    
         (* Update lambdaman *)
@@ -325,7 +262,7 @@ let _ =
             if free (next lambdaman.pos lambdaman.dir)
             then lambdaman.pos <- next lambdaman.pos lambdaman.dir;
 
-            update := true;
+            show_map (); 
 
             lam_tick := !lam_tick + 
                     if pill lambdaman.pos then tick_lambda_eating 
@@ -378,7 +315,7 @@ let _ =
 
                 g.Ghcsim.pos <- next g.Ghcsim.pos g.Ghcsim.dir;
 
-                (*show_map ();  *)
+                show_map (); 
 
                 ghosts_tick.(i) <- ghosts_tick.(i)
                     + if g.Ghcsim.vit = Ghcsim.Fright
@@ -394,7 +331,6 @@ let _ =
         | Some tick -> if !tickcount = tick
             then begin
                 fright_mode := None;
-                ghosts_eaten := 0;
                 lambdaman.vit <- 0;
                 for i = 0 to Array.length !ghosts - 1 do
                     let g = !ghosts.(i) in
@@ -442,6 +378,8 @@ let _ =
                     else
                         score_by_level.(12) in
             let fruitscore = level_score in
+            (* TODO *)
+            lambdaman.score <- lambdaman.score + fruitscore;
             fruit := 0
         end;
 
@@ -466,7 +404,6 @@ let _ =
                     lambdaman.score <- lambdaman.score + !gh_score;
                     if !gh_score < 8 * 200 then
                         gh_score := !gh_score * 2
-                    incr ghosts_eaten
                 end
             end
         done;
@@ -492,24 +429,5 @@ let _ =
         if lambdaman.lives = 0
         then begin failwith "Game lost" end;
 
-        incr tickcount;
-
-        if !update then begin
-            update := false;
-            show_map (); pause()
-        end
+        incr tickcount
     done
-
-    with Gccsim.GccRun(se,p) as e -> begin
-            let a, b = p in
-            let s = lambdaman_source in
-            let n = String.length s in
-            let context = 50 in
-            let a0 = max 0 (a - context) in
-            let b0 = min (n-1) (b + context) in
-            let sub a b = String.sub s a (b-a) in
-            Printf.printf "Exception %s while evaluating:\n%s***%s***%s\n"
-                se (sub a0 a) (sub a b) (sub b b0);
-            Gccsim.dump_machine lambdaman.mac;
-            raise e
-        end

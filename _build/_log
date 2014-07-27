@@ -1,0 +1,220 @@
+### Starting build.
+# Target: simulateur.ml.depends, tags: { extension:ml, file:simulateur.ml, ocaml, ocamldep, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamldep -modules simulateur.ml > simulateur.ml.depends
+# Target: common.ml.depends, tags: { extension:ml, file:common.ml, ocaml, ocamldep, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamldep -modules common.ml > common.ml.depends # cached
+# Target: common.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:common.cmo, file:common.ml, implem, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlc -c -o common.cmo common.ml # cached
+# Target: compiler.ml.depends, tags: { extension:ml, file:compiler.ml, ocaml, ocamldep, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamldep -modules compiler.ml > compiler.ml.depends # cached
+# Target: ast.ml.depends, tags: { extension:ml, file:ast.ml, ocaml, ocamldep, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamldep -modules ast.ml > ast.ml.depends # cached
+# Target: ast.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:ast.cmo, file:ast.ml, implem, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlc -c -o ast.cmo ast.ml # cached
+# Target: gcc.ml.depends, tags: { extension:ml, file:gcc.ml, ocaml, ocamldep, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamldep -modules gcc.ml > gcc.ml.depends # cached
+# Target: gcc.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:gcc.cmo, file:gcc.ml, implem, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlc -c -o gcc.cmo gcc.ml # cached
+# Target: lexer.mll, tags: { extension:mll, file:lexer.mll, lexer, ocaml, ocamllex, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamllex -q lexer.mll # cached
+# Target: lexer.ml.depends, tags: { extension:ml, file:lexer.ml, ocaml, ocamldep, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamldep -modules lexer.ml > lexer.ml.depends # cached
+# Target: parser.mly.depends, tags: { extension:mly, file:parser.mly, menhir_ocamldep, ocaml, ocamldep, quiet, traverse, use_graphics, use_menhir }
+menhir --raw-depend --ocamldep '/usr/bin/ocamldep -modules' parser.mly > parser.mly.depends # cached
+# Target: parser.mly, tags: { byte, compile, extension:mly, file:parser.mly, menhir, ocaml, parser, quiet, traverse, use_graphics, use_menhir }
+menhir --ocamlc /usr/bin/ocamlc --infer parser.mly # cached
+# Target: parser.mli.depends, tags: { extension:mli, file:parser.mli, ocaml, ocamldep, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamldep -modules parser.mli > parser.mli.depends # cached
+# Target: parser.cmi, tags: { byte, compile, extension:mli, file:parser.mli, interf, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlc -c -o parser.cmi parser.mli # cached
+# Target: lexer.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:lexer.cmo, file:lexer.ml, implem, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlc -c -o lexer.cmo lexer.ml # cached
+# Target: compiler.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:compiler.cmo, file:compiler.ml, implem, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlc -c -o compiler.cmo compiler.ml # cached
+# Target: gccsim.ml.depends, tags: { extension:ml, file:gccsim.ml, ocaml, ocamldep, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamldep -modules gccsim.ml > gccsim.ml.depends # cached
+# Target: gccsim.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:gccsim.cmo, file:gccsim.ml, implem, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlc -c -o gccsim.cmo gccsim.ml # cached
+# Target: ghc.ml.depends, tags: { extension:ml, file:ghc.ml, ocaml, ocamldep, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamldep -modules ghc.ml > ghc.ml.depends # cached
+# Target: ghc.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:ghc.cmo, file:ghc.ml, implem, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlc -c -o ghc.cmo ghc.ml # cached
+# Target: ghcsim.ml.depends, tags: { extension:ml, file:ghcsim.ml, ocaml, ocamldep, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamldep -modules ghcsim.ml > ghcsim.ml.depends # cached
+# Target: ghcsim.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:ghcsim.cmo, file:ghcsim.ml, implem, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlc -c -o ghcsim.cmo ghcsim.ml # cached
+# Target: simulateur.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:simulateur.cmo, file:simulateur.ml, implem, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlc -c -o simulateur.cmo simulateur.ml
++ /usr/bin/ocamlc -c -o simulateur.cmo simulateur.ml
+File "simulateur.ml", line 63, characters 16-20:
+Warning 26: unused variable cpos.
+# Target: parser.ml.depends, tags: { extension:ml, file:parser.ml, ocaml, ocamldep, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamldep -modules parser.ml > parser.ml.depends
+# Target: ast.cmx, tags: { compile, extension:cmx, extension:ml, file:ast.cmx, file:ast.ml, implem, native, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlopt -c -o ast.cmx ast.ml
++ /usr/bin/ocamlopt -c -o ast.cmx ast.ml
+File "ast.ml", line 31, characters 4-247:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(Sub (_, _)|Mul (_, _)|Div (_, _)|If (_, _, _)|Equals (_, _)|Greater (_, _)|
+GreaterEquals (_, _)|Tuple (_, _, _)|Head _|Tail _|Chain (_, _)|Print _|
+Assign (_, _)|Atom _)
+# Target: parser.cmx, tags: { compile, extension:cmx, extension:ml, file:parser.cmx, file:parser.ml, implem, native, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlopt -c -o parser.cmx parser.ml
+# Target: gcc.cmx, tags: { compile, extension:cmx, extension:ml, file:gcc.cmx, file:gcc.ml, implem, native, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlopt -c -o gcc.cmx gcc.ml
+# Target: lexer.cmx, tags: { compile, extension:cmx, extension:ml, file:lexer.cmx, file:lexer.ml, implem, native, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlopt -c -o lexer.cmx lexer.ml
+# Target: common.cmx, tags: { compile, extension:cmx, extension:ml, file:common.cmx, file:common.ml, implem, native, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlopt -c -o common.cmx common.ml
+# Target: ghc.cmx, tags: { compile, extension:cmx, extension:ml, file:ghc.cmx, file:ghc.ml, implem, native, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlopt -c -o ghc.cmx ghc.ml
+# Target: compiler.cmx, tags: { compile, extension:cmx, extension:ml, file:compiler.cmx, file:compiler.ml, implem, native, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlopt -c -o compiler.cmx compiler.ml
++ /usr/bin/ocamlopt -c -o compiler.cmx compiler.ml
+File "compiler.ml", line 76, characters 21-28:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(DFun (_, _)|DDummy)
+File "compiler.ml", line 97, characters 37-212:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(_, DDummy)::_
+File "compiler.ml", line 112, characters 8-254:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(_, DDummy)::_
+File "compiler.ml", line 153, characters 25-33:
+Warning 40: pos_cnum was selected from type Lexing.position.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "compiler.ml", line 154, characters 23-31:
+Warning 40: pos_cnum was selected from type Lexing.position.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+# Target: gccsim.cmx, tags: { compile, extension:cmx, extension:ml, file:gccsim.cmx, file:gccsim.ml, implem, native, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlopt -c -o gccsim.cmx gccsim.ml
++ /usr/bin/ocamlopt -c -o gccsim.cmx gccsim.ml
+File "gccsim.ml", line 95, characters 6-9:
+Warning 40: LDC was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 96, characters 6-8:
+Warning 40: LD was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 105, characters 6-9:
+Warning 40: ADD was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 109, characters 6-9:
+Warning 40: SUB was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 113, characters 6-9:
+Warning 40: MUL was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 117, characters 6-9:
+Warning 40: DIV was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 121, characters 6-9:
+Warning 40: CEQ was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 125, characters 6-9:
+Warning 40: CGT was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 129, characters 6-10:
+Warning 40: CGTE was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 133, characters 6-10:
+Warning 40: ATOM was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 136, characters 6-10:
+Warning 40: CONS was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 141, characters 6-9:
+Warning 40: CAR was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 144, characters 6-9:
+Warning 40: CDR was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 147, characters 6-9:
+Warning 40: SEL was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 150, characters 6-10:
+Warning 40: JOIN was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 152, characters 6-9:
+Warning 40: LDF was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 155, characters 6-8:
+Warning 40: AP was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 163, characters 6-9:
+Warning 40: RTN was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 172, characters 6-9:
+Warning 40: DUM was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 176, characters 6-9:
+Warning 40: RAP was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 186, characters 6-10:
+Warning 40: TSEL was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 188, characters 6-9:
+Warning 40: TAP was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 195, characters 6-10:
+Warning 40: TRAP was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 204, characters 6-8:
+Warning 40: ST was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 213, characters 6-10:
+Warning 40: STOP was selected from type Gcc.instr.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+File "gccsim.ml", line 238, characters 8-20:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(Int _|Cons (_, _))
+File "gccsim.ml", line 247, characters 8-22:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(_, (Cons (_, _)|Closure (_, _)))
+# Target: ghcsim.cmx, tags: { compile, extension:cmx, extension:ml, file:ghcsim.cmx, file:ghcsim.ml, implem, native, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlopt -c -o ghcsim.cmx ghcsim.ml
++ /usr/bin/ocamlopt -c -o ghcsim.cmx ghcsim.ml
+File "ghcsim.ml", line 85, characters 15-1130:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+9
+# Target: simulateur.cmx, tags: { compile, extension:cmx, extension:ml, file:simulateur.cmx, file:simulateur.ml, implem, native, ocaml, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlopt -c -o simulateur.cmx simulateur.ml
++ /usr/bin/ocamlopt -c -o simulateur.cmx simulateur.ml
+File "simulateur.ml", line 63, characters 16-20:
+Warning 26: unused variable cpos.
+# Target: simulateur.native, tags: { dont_link_with, extension:native, file:simulateur.native, link, native, ocaml, program, quiet, traverse, use_graphics, use_menhir }
+/usr/bin/ocamlopt graphics.cmxa ast.cmx common.cmx gcc.cmx parser.cmx lexer.cmx compiler.cmx gccsim.cmx ghc.cmx ghcsim.cmx simulateur.cmx -o simulateur.native
+# Compilation successful.
