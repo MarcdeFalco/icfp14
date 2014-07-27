@@ -1,3 +1,18 @@
+fun split_by(l,s)
+{
+    fun aux(l,acc,n)
+    {
+        if l.isempty
+        then if n > 1
+             then [rev(acc)] else []
+        else if n == s
+             then (rev( (l.hd,acc) ), aux(l.tl,[],1))
+             else aux(l.tl, (l.hd,acc), n+1)
+    }
+
+    aux(l,[],1)
+}
+
 fun load_map(l)
 {
     fun aux(l,i)
@@ -5,7 +20,7 @@ fun load_map(l)
         if l.isempty
         then ()
         else (
-            map_set(i,l.hd);
+            map_set(i, l.hd);
             aux(l.tl,i+1)
         )
     }
@@ -15,6 +30,40 @@ fun load_map(l)
 fun map_cell(x,y)
 {
     nth(map_get(y),x)
+}
+
+fun map_cell_set(x,y,v)
+{
+    map_set(y, replace(map_get(y),x,v))
+}
+
+fun map_visit_count(x,y)
+{
+    nth(map_visit_get(y),x)
+}
+
+fun map_visit_cell_set(x,y,v)
+{
+    map_visit_set(y, replace(map_visit_get(y),x,v))
+}
+
+fun map_visit_incr(x,y)
+{
+    map_visit_cell_set(x,y,map_visit_count(x,y)+1)
+}
+
+fun init_map_visit(l)
+{
+    fun aux(l,i)
+    {
+        if l.isempty
+        then ()
+        else (
+            map_visit_set(i, list_zero(length(l.hd)));
+            aux(l.tl,i+1)
+        )
+    }
+    aux(l,0)
 }
 
 fun init_map_dist(l)

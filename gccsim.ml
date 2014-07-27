@@ -90,6 +90,7 @@ let currentPos = ref (0,0)
 let calls = Hashtbl.create 42 
 
 let register_call f tail =
+    (*Printf.printf "%s " f;*)
     if not (Hashtbl.mem calls f)
     then  Hashtbl.add calls f (0,0);
     let cb, ct = Hashtbl.find calls f in

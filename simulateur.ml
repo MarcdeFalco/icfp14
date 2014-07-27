@@ -493,7 +493,7 @@ let _ =
         if !update then begin
             update := false;
             show_map ();
-            (*pause ()*)
+            pause ()
         end
     done
 

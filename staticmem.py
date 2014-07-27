@@ -1,5 +1,4 @@
-
-for ar,n in [ ('map',256 * 8), ('map_dist',256), ('queue',1000) ]:
+for ar,n in [ ('map',256), ('map_visit',256), ('map_dist',256), ('queue',1000) ]:
     s = ''
     for i in range(n):
         s +=  'let %s%d = 0 in ' % (ar,i)
