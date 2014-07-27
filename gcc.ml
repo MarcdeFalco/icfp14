@@ -17,8 +17,9 @@ type instr =
     | DUM of int | RAP of int
     | DBUG | STOP
     | TAP of int | TRAP of int
+    | FILEINFO of int * int
 
-let pp_instr i =
+let pp_instr src i =
     match i with
     | Label s -> s ^ ":"
     | LDC n -> "LDC " ^ string_of_int n
@@ -50,28 +51,28 @@ let pp_instr i =
     | DUM n -> "DUM " ^ string_of_int n
     | DBUG -> "DBUG"
     | STOP -> "STOP"
-
-let pp_code code = String.concat "\n" (List.map pp_instr code)
+    | FILEINFO (a,b) -> "; " ^ String.sub src a (b-a)
 
 let absolute code =
     let rec aux code acc pos = 
         match code with 
         | [] -> acc
         | Label s::q -> aux q ((s,pos)::acc) pos
+        (*| FILEINFO(_,_)::q -> aux q acc pos*)
         | _::q -> aux q acc (pos+1)
     in
     let labels = aux code [] 0 in
 
-    let rec replace code = 
+    let rec replace c code = 
         match code with
         | [] -> []
-        | Label s :: q -> replace q
+        | Label s :: q -> replace c q
         | i :: q -> begin
             match i with
             | LDFs s -> LDF (List.assoc s labels)
             | SELs (a,b) -> SEL (List.assoc a labels, List.assoc b labels)
             | TSELs (a,b) -> TSEL (List.assoc a labels, List.assoc b labels)
             | _ -> i
-        end :: replace q
+        end :: replace (c+1) q
 
-    in Array.of_list (replace code)
+    in Array.of_list (replace 0 code)

@@ -22,6 +22,11 @@ let rec chainize l =
     | [x] -> x
     | t::q -> Chain(t, chainize(q))
 
+let rec listize l =
+    match l with
+    | [] -> Const 0
+    | t::q -> Cons(t, listize(q))
+
 let rec consize l =
     match l with
     | [] -> failwith "Invalid"
@@ -60,7 +65,9 @@ base_decl:
 main_expr: 
     | l = separated_nonempty_list(SEMICOLON, expr) { chainize(l) }
 
-expr: a = expr PLUS b = expr { Add(a,b) }
+expr : a = bexpr { SetFileInfo(a, $startpos.pos_cnum, $endpos.pos_cnum) } 
+
+bexpr: a = expr PLUS b = expr { Add(a,b) }
     | a = expr TIMES b = expr { Mul(a,b) }
     | a = expr DIV b = expr { Div(a,b) }
     | a = expr MINUS b = expr { Sub(a,b) }
@@ -73,6 +80,8 @@ expr: a = expr PLUS b = expr { Add(a,b) }
     | a = expr LBRACKET b = INT RBRACKET { Tuple(a,b,2) }
     | a = expr DOT HD { Head a }
     | a = expr DOT TL { Tail a }
+    | LPAREN RPAREN { Nop }
+    | LBRACKET l = separated_list(SEMICOLON, expr) RBRACKET { listize(l) }
     | RETURN a = expr { Chain(Print a, a) }
     | PRINT a = expr { Print a }
     | v = ID LEFTARROW a = expr { Assign(v,a) }

@@ -4,6 +4,8 @@ open Gcc
 let lbl = ref 0
 let iflbl = ref 0
 
+let currentPos = ref (0,0)
+
 let rec compile env (loc, e) =
     let branches = ref [] in
     let rec get_idx s loc =
@@ -22,6 +24,8 @@ let rec compile env (loc, e) =
     in
     let rec eval_expr bt env e =
         match e with
+        | SetFileInfo(e,a,b) -> currentPos := (a,b); [ FILEINFO(a,b) ] @ eval_expr bt env e
+        | Nop -> []
         | Const n -> [LDC n]
         | Atom a -> eval_expr false env a @ [ATOM]
         | Cons (a,b) -> eval_expr false env a @ eval_expr false env b @ [ CONS ]
@@ -75,6 +79,7 @@ let rec compile env (loc, e) =
             if List.mem_assoc s loc 
             then let DVar ep = List.assoc s loc in expand loc ep
             else Var s
+        | SetFileInfo(e,a,b) -> SetFileInfo(expand loc e, a, b)
         | Cons(a,b) -> Cons(expand loc a, expand loc b)
         | Add(a,b) -> Add(expand loc a, expand loc b)
         | Sub(a,b) -> Sub(expand loc a, expand loc b)
@@ -148,7 +153,7 @@ let compile_file fn =
         let l = Parser.main Lexer.token (Lexing.from_string s) in
         let code = compile [[("world", DDummy); ("unk", DDummy)]] l in
         let acode = absolute code in
-        acode
+        acode, s
     with Ast.SyntaxError(loc,startpos,endpos) ->
         let a = startpos.pos_cnum in
         let b = endpos.pos_cnum in
@@ -160,30 +165,14 @@ let compile_file fn =
         Printf.printf "Syntax error while parsing a %s rule:\n%s***%s***%s\n"
             loc (sub a0 a) (sub a b) (sub b b0);
         failwith "Syntax error"
-
-(*
-let _ =
-    Printexc.record_backtrace true;
-    let f = open_in Sys.argv.(1) in
-    let sz = in_channel_length f in
-    let s = String.make sz ' ' in
-    really_input f s 0 sz;
-    try
-        let l = Parser.main Lexer.token (Lexing.from_string s) in
-        let code = compile [[("world", DDummy); ("unk", DDummy)]] l in
-        let acode = absolute code in
-        for i = 0 to Array.length acode - 1 do
-            Printf.printf "%s ; %d\n"
-                (pp_instr acode.(i)) i
-        done
-    with Ast.SyntaxError(loc,startpos,endpos) ->
-        let a = startpos.pos_cnum in
-        let b = endpos.pos_cnum in
+    | e ->
+        let a, b  = !currentPos in
         let n = String.length s in
         let context = 20 in
         let a0 = max 0 (a - context) in
         let b0 = min (n-1) (b + context) in
         let sub a b = String.sub s a (b-a) in
-        Printf.printf "Syntax error while parsing a %s rule:\n%s***%s***%s\n"
-            loc (sub a0 a) (sub a b) (sub b b0)
-*)
+        Printf.printf "Error while compiling:\n%s***%s***%s\n"
+            (sub a0 a) (sub a b) (sub b b0);
+        raise e
+

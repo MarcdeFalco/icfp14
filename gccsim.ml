@@ -85,6 +85,8 @@ exception FrameMismatch
 exception MachineStop
 exception UnhandledInstruction
 
+let currentPos = ref (0,0)
+
 let eval mac =
     let instr = mac.code.(mac.pc) in
     (*
@@ -92,6 +94,7 @@ let eval mac =
     Printf.printf "[%d] %s\n" mac.pc (Gcc.pp_instr instr);
     *)
     match instr with
+    | FILEINFO (a,b) -> currentPos := (a,b); mac.pc <- mac.pc + 1
     | LDC n -> Stack.push (Int n) mac.data; mac.pc <- mac.pc + 1
     | LD (n, i) ->
         let frame = ref mac.frame in
@@ -211,9 +214,13 @@ let eval mac =
         !frame.locals.(i) <- Stack.pop mac.data;
         mac.pc <- mac.pc + 1
     | STOP -> raise MachineStop
+    | DBUG -> print_data (Stack.pop mac.data); print_newline (); flush stdout;
+            mac.pc <- mac.pc+1
     | _ -> raise UnhandledInstruction
 
 exception CycleExceeded
+
+exception GccRun of string * (int * int)
 let run mac =
     try
         let cycle = ref 0 in
@@ -222,6 +229,7 @@ let run mac =
         done;
         raise CycleExceeded
     with MachineStop -> ()
+         | e -> let se = Printexc.to_string e in raise (GccRun(se, !currentPos))
 
 let main mac world codes =
     let rec fp = { parent = fp; locals = Array.create 2 (Int 42); dummy = false } in

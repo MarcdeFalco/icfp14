@@ -20,6 +20,8 @@ type expr =
     | Print of expr
     | Assign of string * expr
     | Atom of expr
+    | Nop
+    | SetFileInfo of expr * int * int
 
 type decl =
     | DVar of expr
