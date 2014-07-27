@@ -314,8 +314,6 @@ let _ =
 
     let update = ref false in
 
-    let ghosts_eaten = ref 0 in
-
     while true do
         (* Step 1 *)    
         (* Update lambdaman *)
@@ -394,7 +392,7 @@ let _ =
         | Some tick -> if !tickcount = tick
             then begin
                 fright_mode := None;
-                ghosts_eaten := 0;
+                gh_score := 200;
                 lambdaman.vit <- 0;
                 for i = 0 to Array.length !ghosts - 1 do
                     let g = !ghosts.(i) in
@@ -424,7 +422,6 @@ let _ =
             lambdaman.score <- lambdaman.score + 50;
             !map.(lambdaman.pos.y).(lambdaman.pos.x) <- Empty;
             fright_mode := Some (!tickcount + 127 * 20);
-            gh_score := 200;
             for i = 0 to Array.length !ghosts - 1 do
                 let g = !ghosts.(i) in
                 g.Ghcsim.dir <- oppdir g.Ghcsim.dir;
@@ -464,9 +461,7 @@ let _ =
                     g.Ghcsim.pos <- ghosts_start.(i);
                     (* score *)
                     lambdaman.score <- lambdaman.score + !gh_score;
-                    if !gh_score < 8 * 200 then
-                        gh_score := !gh_score * 2
-                    incr ghosts_eaten
+                    if !gh_score < 8 * 200 then gh_score := !gh_score * 2
                 end
             end
         done;
