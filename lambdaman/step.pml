@@ -1,4 +1,18 @@
-let depth_max = 10 in
+let depth_max = 8 in
+
+fun setup_depth_max(map)
+{
+    let w = length(map) in
+    let h = length(map.hd) in
+
+    if h < 10
+    then depth_max <- 40
+    else if h < 20
+    then depth_max <- 20
+    else if h < 30
+    then depth_max <- 10
+    else depth_max <- 8
+}
 
 let closest_pill = 0 in
 let closest_powerpill = 0 in
@@ -103,7 +117,7 @@ fun load_ghosts(ghosts)
         ) else if vit == ghost_fright
         then (
             map_cell_set(x,y,cell_ghost);
-            map_cell_set(nx,ny,cell_ghost)
+            if map_cell(nx,ny) > 0 then map_cell_set(nx,ny,cell_ghost) else ()
         ) else ()
     }
     
@@ -129,7 +143,6 @@ fun closest_target()
     }
     fun closest(a,b)
     {
-        print(a,b,closer(a,b));
         if closer(a,b)
         then a else b
     }
@@ -161,7 +174,6 @@ fun path_to_target(tgt)
     let posLeft = advance(x,y,left) in
     let posRight = advance(x,y,right) in
 
-    (* print(tgt, posUp, posDown, posLeft, posRight); *)
     if map_dist_cell(posUp[0],posUp[1]) == d-1
     then test(down,posUp[0],posUp[1],d-1)
     else if map_dist_cell(posLeft[0],posLeft[1]) == d-1
@@ -175,8 +187,6 @@ fun reach_target()
 {
     let tgt = closest_target() in
 
-    print(42, tgt);
-
     if tgt.isempty
     then down
     else path_to_target(tgt)
@@ -187,8 +197,6 @@ fun step(s,world)
     let map, lambdaman, ghosts, step_fruit = world in
     let vitality, location, dir, lives, score = lambdaman in
     let x,y = location in
-
-    print(41, location);
 
     fruit <- step_fruit;
 

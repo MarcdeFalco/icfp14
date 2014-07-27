@@ -65,9 +65,9 @@ base_decl:
 main_expr: 
     | l = separated_nonempty_list(SEMICOLON, expr) { chainize(l) }
 
-expr : a = bexpr { SetFileInfo(a, $startpos.pos_cnum, $endpos.pos_cnum) } 
+(*expr : a = bexpr { SetFileInfo(a, $startpos.pos_cnum, $endpos.pos_cnum) } 
 
-bexpr: a = expr PLUS b = expr { Add(a,b) }
+b*)expr: a = expr PLUS b = expr { Add(a,b) }
     | a = expr TIMES b = expr { Mul(a,b) }
     | a = expr DIV b = expr { Div(a,b) }
     | a = expr MINUS b = expr { Sub(a,b) }
