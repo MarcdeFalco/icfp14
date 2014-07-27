@@ -217,7 +217,7 @@ let _ =
 
 
     let m = max mapY mapX in
-    adap_cell_size := 1000 / m;
+    adap_cell_size := 300 / m;
 
     let cell_size = !adap_cell_size in
     let szX = cell_size * mapX in
@@ -238,7 +238,6 @@ let _ =
     let lambdaman_start = init_lambdaman lambdaman_code in
     let ghosts_start = init_ghosts ghosts_code in
     show_map ();
-    pause ();
     let gccworld = encode_world () in
     let gcccodes = Gccsim.Int 42 in
 
@@ -491,7 +490,8 @@ let _ =
 
         if !update then begin
             update := false;
-            show_map (); pause()
+            show_map ();
+            (*pause ()*)
         end
     done
 
@@ -508,3 +508,5 @@ let _ =
             Gccsim.dump_machine lambdaman.mac;
             raise e
         end
+    | e -> Printf.printf "Score :%d (tickcount : %d)\n" lambdaman.score
+        !tickcount; raise e

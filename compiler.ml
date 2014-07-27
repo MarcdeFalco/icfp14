@@ -70,7 +70,7 @@ let rec compile env (loc, e) =
                 branches := (tlabel, t) :: (elabel,f) :: !branches;
                 eval_expr false env c @ [ SELs(tlabel, elabel) ]
             end
-        | Chain(a,b) -> eval_expr false env a @ eval_expr false env b
+        | Chain(a,b) -> eval_expr false env a @ eval_expr bt env b
         | Print a -> eval_expr false env a @ [ DBUG ]
     in
     let rec expand loc e =
@@ -145,10 +145,19 @@ let rec compile env (loc, e) =
 
 let compile_file fn =
     Printexc.record_backtrace true;
+
+    let f = open_in "constantmem.pml" in
+    let sz = in_channel_length f in
+    let sprel = String.make sz ' ' in
+    really_input f sprel 0 sz;
+
     let f = open_in fn in
     let sz = in_channel_length f in
-    let s = String.make sz ' ' in
-    really_input f s 0 sz;
+    let scode = String.make sz ' ' in
+    really_input f scode 0 sz;
+
+    let s = sprel ^ scode in
+
     try
         let l = Parser.main Lexer.token (Lexing.from_string s) in
         let code = compile [[("world", DDummy); ("unk", DDummy)]] l in

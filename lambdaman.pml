@@ -9,17 +9,19 @@ let cell_fruit = 4 in
 
 (* Direction grading system *)
 let unit = 1 in
-let repetition = unit in
+let repetition = unit * 10 in
 let direct_pill = unit * 10 in
-let direct_ghost = unit * 100 in
-let direct_powerpill = unit * 50 in
-let direct_fruit = unit * 70 in
-let penaly_opposite = 5 * unit in
+let direct_ghost = unit * 200 in
+let direct_eat_ghost = unit * 100 in
+let direct_powerpill = unit * 100 in
+let direct_fruit = unit * 80 in
+let penalty_opposite = 100 * unit in
 let least_tol = unit * 2 in
-let distant_pill = unit * 1 in
-let distant_ghost = unit * 10 in
-let distant_powerpill = unit * 5 in
-let distant_fruit = unit * 10 in
+let distant_pill = unit * 10 in
+let distant_ghost = unit * 100 in
+let distant_eat_ghost = unit * 200 in
+let distant_powerpill = unit * 50 in
+let distant_fruit = unit * 80 in
 
 let map, lambdaman, ghost, fruit = world in
 
@@ -71,7 +73,8 @@ fun nth(l,n) {
 }
 
 fun getCell(map,x,y) {
-    nth(nth(map,y),x)
+    nth(aget(y),x)
+    (* nth(nth(map,y),x) *)
 }
 
 fun advance(x,y,dir) {
@@ -155,6 +158,16 @@ fun max4i(a,b,c,d)
     else 3
 }
 
+fun loadRows(l,i)
+{
+    if isempty(l)
+    then ()
+    else (
+        aset(i,l.hd);
+        loadRows(l.tl,i+1)
+    )
+}
+
 fun ghostIn(x,y,g)
 {
     let vit, pos, gdir = g in
@@ -182,6 +195,8 @@ fun step(s,world) {
     let x, y = location in
 
     let cache, last = s in
+
+    
 
     fun freeNoGhost(map,x,y,d)
     {
@@ -221,12 +236,40 @@ fun step(s,world) {
         getCell(map,nx,ny)
     }
 
-    fun gradeDir(d)
+    fun gradeDirLight(d)
     {
         let grade = 0 in
         let nx, ny = advance(x,y,d) in 
 
-        let pills, powerpills, fruit, nghosts = walk(world,6,(nx,ny)) in
+        let c = nextCell(d) in
+
+        if c == cell_pill
+        then grade <- grade + direct_pill else ();
+
+        if c == cell_powerpill
+        then grade <- grade + direct_powerpill
+        else ();
+
+        if c == cell_fruit
+        then grade <- grade + direct_fruit else ();
+
+        if are_opposite(d,dir)
+        then grade <- grade - penalty_opposite
+        else ();
+
+        grade <- grade - repetition * occ(last, (nx,ny));
+
+        grade <- grade + (if vitality > 0 then direct_eat_ghost else 0 - direct_ghost)* isGhost(nx,ny,ghosts);
+
+        (d,grade)
+    }
+
+    fun gradeDirFull(d)
+    {
+        let grade = 0 in
+        let nx, ny = advance(x,y,d) in 
+
+        let pills, powerpills, fruit, nghosts = walk(world,5,(x,y),d) in
 
         let c = nextCell(d) in
 
@@ -234,24 +277,25 @@ fun step(s,world) {
             + distant_pill * pills
             + distant_powerpill * powerpills
             + distant_fruit * fruit
-            + (if vitality > 0 then distant_ghost else 0 - distant_ghost)*nghosts;
+            + (if vitality > 0 then distant_eat_ghost else 0 - distant_ghost)*nghosts;
 
         if c == cell_pill
         then grade <- grade + direct_pill else ();
 
         if c == cell_powerpill
-        then grade <- grade + direct_powerpill else ();
+        then grade <- grade + (1+nghosts) * direct_powerpill
+        else ();
 
         if c == cell_fruit
         then grade <- grade + direct_fruit else ();
 
         if are_opposite(d,dir)
-        then grade <- grade - penaly_opposite
+        then grade <- grade - penalty_opposite
         else ();
 
         grade <- grade - repetition * occ(last, (nx,ny));
 
-        grade <- grade + (if vitality > 0 then direct_ghost else 0 - direct_ghost)* isGhost(nx,ny,ghosts);
+        grade <- grade + (if vitality > 0 then direct_eat_ghost else 0 - direct_ghost)* isGhost(nx,ny,ghosts);
 
         (d,grade)
     }
@@ -305,7 +349,7 @@ fun step(s,world) {
         bestdir
     }
 
-    fun max_grade(l)
+    fun max_grade(l,light)
     {
         let bestdir = 0 in
         let bestgrade = 0 - unit * 1000 in
@@ -324,23 +368,36 @@ fun step(s,world) {
         }
 
         iter(l, evalDir);
-        (*
-        if and(bestgrade <= 0, max(mapX,mapY) < 50) (* targetting *)
-        then (
-            target(filter(leastGraded, l))
-            )
-        else
-        *)
-        bestdir
+        if and(bestgrade <= 0,light)
+        then 42
+        else bestdir
     }
 
     fun computeReturn(avail)
     {
-        let d = max_grade(list_map(gradeDir, avail)) in
+        fun gradeTwoTimes()
+        {
+            let d = max_grade(list_map(gradeDirLight, avail),1) in
+            if d == 42
+            then max_grade(list_map(gradeDirFull, avail),0) 
+            else d
+        }
 
-        ( (cache, (advance(x,y,d), prefix(last,1000))), d)
+        fun gradeOneTime()
+        {
+            max_grade(list_map(gradeDirFull, avail),0) 
+        }
+
+        fun getReturn()
+        {
+            let d = gradeOneTime() in
+            ( (cache, (advance(x,y,d), prefix(last,100))), d)
+        }
+
+        getReturn()
     }
 
+    loadRows(map,0);
     computeReturn(getAvailableDir())
 }
 
@@ -468,7 +525,7 @@ fun cacheDir(map) {
 
 let depth_max = 10 in
 
-fun walk(world,depth_max,pos)
+fun walk(world,depth_max,pos,d)
 {
     let map, lambda, ghosts, fruit = world in
     let pills = 0 in
@@ -476,8 +533,8 @@ fun walk(world,depth_max,pos)
     let fruit = 0 in
     let nghosts = 0 in
 
-    let tovisit = ( (pos,0), 0 ) in
-    let visited = [] in
+    let tovisit = ( (advance(pos[0],pos[1],d),0), 0 ) in
+    let visited = [ pos ] in
 
     fun next_walk()
     {
@@ -530,5 +587,4 @@ fun walk(world,depth_max,pos)
     (pills, powerpills, fruit, nghosts)
 }
 
-
-((0(*cacheDir(map)*),0), step)
+((0,0), step)
