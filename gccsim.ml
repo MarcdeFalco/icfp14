@@ -60,6 +60,23 @@ let dump_machine mac =
     print_frame mac.frame;
     print_newline ()
 
+let data_to_int d =
+    match d with
+    | Int n -> n
+    | _ -> failwith "Invalid conversion of data to int"
+
+let rec data_to_list f d =
+    match d with
+    | Int 0 -> []
+    | Cons(a,b) -> f a :: data_to_list f b
+
+let get_main_frame_data mac =
+    let rec aux f oldf =
+        if f.parent != f
+        then aux f.parent f
+        else oldf.locals
+    in aux mac.frame mac.frame
+
 exception TagMismatch
 let intofpop mac = 
     match Stack.pop mac.data with

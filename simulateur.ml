@@ -59,32 +59,53 @@ let load_map fn =
 
 let adap_cell_size = ref 10
 
-let show_map () =
+let display_int_map map sx =
     let cell_size = !adap_cell_size in
-    let height = Array.length !map in
-    for y = 0 to Array.length !map - 1 do
-        for x = 0 to Array.length !map.(0) - 1 do
+    let height = Array.length map in
+    for y = 0 to Array.length map - 1 do
+        for x = 0 to Array.length map.(0) - 1 do
+            set_color black;
+            fill_rect (sx+cell_size*x) (cell_size * (height - y -1)) cell_size cell_size;
+            if map.(y).(x) > 0
+            then begin
+                set_color white;
+                moveto (sx+cell_size*x) (cell_size * (height - y -1));
+                draw_string (string_of_int map.(y).(x))
+            end
+        done;
+    done
+
+let display_map map sx =
+    let cell_size = !adap_cell_size in
+    let height = Array.length map in
+    for y = 0 to Array.length map - 1 do
+        for x = 0 to Array.length map.(0) - 1 do
             let cpos = {x=x;y=y} in
 
-            let color = match !map.(y).(x) with
+            let color = match map.(y).(x) with
             | Wall -> blue | Empty -> white
             | Pill -> red | Powerpill -> red
             | Fruit -> if !fruit > 0 then green else white
             | LStart ->  white
-            | GStart -> white in
+            | GStart -> white 
+            | _ -> cyan in
 
             set_color white;
-            fill_rect (cell_size*x) (cell_size * (height - y -1)) cell_size
+            fill_rect (sx+cell_size*x) (cell_size * (height - y -1)) cell_size
             cell_size;
             set_color color;
 
-            match !map.(y).(x) with
-            | Pill -> fill_circle (cell_size*x+cell_size/2) (cell_size * (height - y -1)+cell_size/2) (cell_size/5)
-            | Powerpill -> fill_circle (cell_size*x+cell_size/2) (cell_size * (height - y -1)+cell_size/2) (cell_size/3)
-            | _ -> fill_rect (cell_size*x) (cell_size * (height - y -1)) cell_size cell_size
+            match map.(y).(x) with
+            | Pill -> fill_circle (sx+cell_size*x+cell_size/2) (cell_size * (height - y -1)+cell_size/2) (cell_size/5)
+            | Powerpill -> fill_circle (sx+cell_size*x+cell_size/2) (cell_size * (height - y -1)+cell_size/2) (cell_size/3)
+            | _ -> fill_rect (sx+cell_size*x) (cell_size * (height - y -1)) cell_size cell_size
         done;
-    done;
+    done
 
+let show_map () =
+    display_map !map 0;
+    let cell_size = !adap_cell_size in
+    let height = Array.length !map in
     set_color black;
     let lx = (cell_size*lambdaman.pos.x) in
     let ly = cell_size*(height-1-lambdaman.pos.y) in
@@ -125,9 +146,9 @@ let show_map () =
     moveto 0 (3+cell_size * height);
     set_color black;
     draw_string (Printf.sprintf
-        "tick:%d   score:%d"
-        !tickcount lambdaman.score)
-
+        "tick:%d   score:%d    lives:%d     vit:%d     fruit:%d"
+        !tickcount lambdaman.score
+        lambdaman.lives lambdaman.vit !fruit)
 
 let init_lambdaman code =
     Gccsim.init_machine lambdaman.mac code;
@@ -196,6 +217,27 @@ let encode_world () =
     let gccfruit = Gccsim.Int (if !fruit > 0 then !fruit - !tickcount else 0) in
 
     Gccsim.Cons( !gccmap, Gccsim.Cons( gcclam, Gccsim.Cons( !gccghs, gccfruit)))
+
+let load_matrix_from_data frame_data off mapX mapY =
+    let map = Array.make mapY [||] in
+    for y = 0 to mapY - 1 do
+        let l = Gccsim.data_to_list Gccsim.data_to_int frame_data.(y+256*off) in
+        let v = Array.of_list l in
+        map.(y) <- v
+    done;
+    map
+ 
+let load_map_from_data frame_data off mapX mapY =
+    let map = Array.make_matrix mapY mapX Wall in
+    for y = 0 to mapY - 1 do
+        let l = Gccsim.data_to_list Gccsim.data_to_int frame_data.(y+256*off) in
+        let v = Array.of_list l in
+
+        for x = 0 to mapX - 1 do
+            map.(y).(x) <- cell_of_int v.(x)
+        done
+    done;
+    map
     
 exception FoundPill
 
@@ -218,12 +260,13 @@ let _ =
 
 
     let m = max mapY mapX in
-    adap_cell_size := 300 / m;
+    adap_cell_size := 500 / m;
 
     let cell_size = !adap_cell_size in
     let szX = cell_size * mapX in
     let szY = cell_size * mapY + 20 in
-    open_graph (Printf.sprintf " %dx%d" szX szY);
+    let sep = cell_size / 2 in
+    open_graph (Printf.sprintf " %dx%d" (3 * szX + 2 * sep) szY);
     let lambdaman_code, lambdaman_source = Compiler.compile_file "lambdaman.pml" in
 
     let fo = open_out "lambdaman.S" in
@@ -235,7 +278,7 @@ let _ =
         else Printf.fprintf fo "%s\n" s
     done;
     close_out fo;
-    let ghosts_code = [| Ghc.random |] in
+    let ghosts_code = [| Ghc.ghost1; Ghc.ghost2; Ghc.ghost3; Ghc.ghost4 |] in
     let lambdaman_start = init_lambdaman lambdaman_code in
     let ghosts_start = init_ghosts ghosts_code in
     show_map ();
@@ -251,7 +294,6 @@ let _ =
     for i = 0 to Array.length !ghosts - 1 do
         ghosts_tick.(i) <- tick_ghosts.(i mod 4)
     done;
-
 
     let run_lambdaman () =
         let gccworld = encode_world () in
@@ -468,15 +510,17 @@ let _ =
         done;
 
         (* Step 5 *)
-        let won = try
+        let won = 
+            let npills = ref 0 in
+
             for x = 0 to mapX - 1 do
                 for y = 0 to mapY - 1 do
                     if !map.(y).(x) = Pill
-                    then raise FoundPill
+                    then incr npills
                 done
             done;
-            true
-        with FoundPill -> false in
+            !npills = 0 
+        in
 
         if won
         then begin
@@ -491,8 +535,18 @@ let _ =
         incr tickcount;
 
         if !update then begin
+            let frame_data = Gccsim.get_main_frame_data lambdaman.mac in
             update := false;
             show_map ();
+            display_map (load_map_from_data frame_data 0 mapX mapY)
+            (!adap_cell_size * mapX + sep);
+            
+            display_int_map (load_matrix_from_data frame_data 2 mapX mapY)
+            (!adap_cell_size * 2 *mapX + 2 * sep);
+            (*
+            display_int_map (load_matrix_from_data frame_data 1 mapX mapY)
+            (!adap_cell_size * 3 *mapX + 3 * sep);
+            *)
             pause ()
         end
     done

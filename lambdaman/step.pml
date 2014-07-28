@@ -9,13 +9,13 @@ fun setup_depth_max(map)
     then depth_max <- 1000 else ();
 
     if w >= 10
-    then depth_max <- 100 else ();
+    then depth_max <- 80 else ();
 
     if w >= 20
-    then depth_max <- 100 else ();
+    then depth_max <- 20 else ();
 
     if w >= 25
-    then depth_max <- 30 else ();
+    then depth_max <- 15 else ();
 
     if w >= 30
     then depth_max <- 10 else ();
@@ -33,6 +33,8 @@ let closest_ghost = 0 in
 let closest_unvisited = 0 in
 let least_visit_count = 0 in
 
+let interesting = 0 in
+
 let fruit = 0 in
 
 fun init_closest()
@@ -42,13 +44,19 @@ fun init_closest()
     closest_fruit <- 0;
     closest_ghost <- 0;
     closest_unvisited <- 0;
-    least_visit_count <- 3000000
+    least_visit_count <- 3000000;
+    interesting <- 0
 }
 
 fun visit(x,y,d)
 {
     let c = map_cell(x,y) in
     let v = map_visit_count(x,y) in
+
+    if or(c == cell_pill,
+       or(c == cell_powerpill,
+       or(and(fruit, c == cell_fruit),c == cell_ghost)))
+    then interesting <- ( (x,y,d), interesting ) else ();
 
     if and(c == cell_pill, closest_pill.isempty)
     then closest_pill <- (x,y,d) else ();
@@ -147,12 +155,11 @@ fun load_ghosts(xl,yl,ghosts)
             else if and(not(and(x==xl,y==yl)),map_cell(x,y) > 0)
              then (
                 map_cell_set(x,y,cell_wall);
-                if free(x,y) == 1
-                then 
-                    if map_cell(nx,ny) > 0
-                    then wall_ghost(nx, ny, d, n-1)
-                    else 
-                        if map_cell(nxu,nyu) > 0
+                if map_cell(nx,ny) > 0
+                then wall_ghost(nx, ny, d, n-1)
+                else 
+                     if free(x,y) == 1
+                    then if map_cell(nxu,nyu) > 0
                         then wall_ghost(nxu, nyu, up, n-1)
                         else if map_cell(nxd,nyd) > 0
                         then wall_ghost(nxd, nyd, down, n-1)
@@ -171,7 +178,7 @@ fun load_ghosts(xl,yl,ghosts)
 
         if vit == ghost_standard
         then (
-            wall_ghost(x, y, gdir, 5)
+            wall_ghost(x, y, gdir, 10)
         ) else if vit == ghost_fright
         then (
             map_cell_set(x,y,cell_ghost);
@@ -250,6 +257,44 @@ fun reach_target()
     else path_to_target(tgt)
 }
 
+fun dir_most_interesting()
+{
+    let iu = 0 in
+    let id = 0 in
+    let il = 0 in
+    let ir = 0 in
+
+    fun eval(tgt)
+    {
+        let d = path_to_target(tgt) in
+        if d == up
+        then iu <- iu + 1
+        else if d == down
+        then id <- id + 1
+        else if d == left
+        then il <- il + 1
+        else ir <- ir + 1
+    }
+
+    fun aux(l) {
+        if l.isempty
+        then ()
+        else (
+            eval(l.hd);
+            aux(l.tl)
+        ) 
+    }
+
+    aux(interesting);
+
+    if and(iu >= id, and(iu >= il, iu >= ir))
+    then up
+    else if and(id >= iu, and(id >= il, id >= ir))
+    then down
+    else if and(ir >= id, and(ir >= il, id >= iu))
+    then right else left
+}
+
 fun step(s,world)
 {
     let map, lambdaman, ghosts, step_fruit = world in
@@ -273,5 +318,9 @@ fun step(s,world)
     print_map_dist();
     print 1;
     *)
-    (s, reach_target())
+    (*
+    if s == 0
+    then ( mod(s+1,15), dir_most_interesting())
+    *)
+    ( mod(s+1,15), reach_target())
 }
