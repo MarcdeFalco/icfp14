@@ -378,4 +378,31 @@ let ghost4 = [|
 	INT(0);
 	HLT|]
 
-
+let print_ghc gl =
+    let reg = [|"a";"b";"c";"d";"e";"f";"g";"h"|] in
+    let sod d = match d with
+        Reg x -> reg.(x)
+        | IReg x -> "[" ^ reg.(x) ^ "]"
+        | Mem n -> "[" ^ string_of_int n ^ "]"
+        | Const n -> string_of_int n
+    in
+    for i = 0 to Array.length gl - 1 do 
+        let s =
+        match gl.(i) with
+            HLT -> "hlt"
+            | INT n -> "int " ^ string_of_int n
+            | MOV(a,b) -> "mov " ^ sod a ^ "," ^ sod b
+            | INC a -> "inc " ^ sod a
+            | DEC a -> "dec " ^ sod a
+            | ADD(a,b) -> "add " ^ sod a ^ "," ^ sod b
+            | SUB(a,b) -> "sub " ^ sod a ^ "," ^ sod b
+            | MUL(a,b) -> "mul " ^ sod a ^ "," ^ sod b
+            | DIV(a,b) -> "div " ^ sod a ^ "," ^ sod b
+            | OR(a,b) -> "or " ^ sod a ^ "," ^ sod b
+            | XOR(a,b) -> "xor " ^ sod a ^ "," ^ sod b
+            | AND(a,b) -> "and " ^ sod a ^ "," ^ sod b
+            | JLT(n,a,b) -> "jlt " ^ string_of_int n ^ "," ^ sod a ^ "," ^ sod b
+            | JGT(n,a,b) -> "jgt " ^ string_of_int n ^ "," ^ sod a ^ "," ^ sod b
+            | JEQ(n,a,b) -> "jeq " ^ string_of_int n ^ "," ^ sod a ^ "," ^ sod b
+        in print_string s; print_newline ()
+    done

@@ -16,3 +16,12 @@ fun advance2(x,y,dir)
     let x0, y0 = advance(x,y,dir) in
     advance(x0,y0,dir)
 }
+fun abs(v) {
+    if v < 0
+    then 0 - v
+    else v
+}
+fun are_opposite(d1,d2)
+{
+    abs(d1-d2) == 2
+}

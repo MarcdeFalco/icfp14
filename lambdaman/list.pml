@@ -79,15 +79,19 @@ fun nth(l,n)
     then l.hd
     else nth(l.tl,n-1)
 }
-
-fun list_zero(n)
+fun list_make(n,d)
 {
     fun aux (n,a)
     {
         if n == 0 then a
-        else aux(n-1, (0,a))
+        else aux(n-1, (d,a))
     }
     aux(n,[])
+}
+
+fun list_zero(n)
+{
+    list_make(n,0)
 }
 
 fun replace(l,i,x)

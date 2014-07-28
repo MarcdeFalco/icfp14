@@ -65,6 +65,11 @@ let data_to_int d =
     | Int n -> n
     | _ -> failwith "Invalid conversion of data to int"
 
+let data_to_couple d =
+    match d with
+    | Cons(a,b) -> (data_to_int a, data_to_int b)
+    | _ -> failwith "Invalid conversion of data to int"
+
 let rec data_to_list f d =
     match d with
     | Int 0 -> []

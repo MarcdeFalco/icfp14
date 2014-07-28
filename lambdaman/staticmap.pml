@@ -73,7 +73,7 @@ fun init_map_dist(l)
         if l.isempty
         then ()
         else (
-            map_dist_set(i, list_zero(length(l.hd)));
+            map_dist_set(i, list_make(length(l.hd),(0,0)));
             aux(l.tl,i+1)
         )
     }

@@ -59,6 +59,22 @@ let load_map fn =
 
 let adap_cell_size = ref 10
 
+let display_couple_int_map map sx =
+    let cell_size = !adap_cell_size in
+    let height = Array.length map in
+    for y = 0 to Array.length map - 1 do
+        for x = 0 to Array.length map.(0) - 1 do
+            set_color black;
+            fill_rect (sx+cell_size*x) (cell_size * (height - y -1)) cell_size cell_size;
+            if fst map.(y).(x) > 0
+            then begin
+                set_color white;
+                moveto (sx+cell_size*x) (cell_size * (height - y -1));
+                draw_string (string_of_int (snd map.(y).(x) / 137))
+            end
+        done;
+    done
+
 let display_int_map map sx =
     let cell_size = !adap_cell_size in
     let height = Array.length map in
@@ -88,6 +104,8 @@ let display_map map sx =
             | Fruit -> if !fruit > 0 then green else white
             | LStart ->  white
             | GStart -> white 
+            | Ghost -> green
+            | GhostWall -> cyan
             | _ -> cyan in
 
             set_color white;
@@ -218,10 +236,10 @@ let encode_world () =
 
     Gccsim.Cons( !gccmap, Gccsim.Cons( gcclam, Gccsim.Cons( !gccghs, gccfruit)))
 
-let load_matrix_from_data frame_data off mapX mapY =
+let load_matrix_from_data f frame_data off mapX mapY =
     let map = Array.make mapY [||] in
     for y = 0 to mapY - 1 do
-        let l = Gccsim.data_to_list Gccsim.data_to_int frame_data.(y+256*off) in
+        let l = Gccsim.data_to_list f frame_data.(y+256*off) in
         let v = Array.of_list l in
         map.(y) <- v
     done;
@@ -258,6 +276,14 @@ let _ =
     let fruit_score = if level <= 12 then fruit_score_array.(level) else 5000
     in
 
+    Printf.printf "ghost1.ghc\n";
+    Ghc.print_ghc Ghc.ghost1;
+    Printf.printf "ghost2.ghc\n";
+    Ghc.print_ghc Ghc.ghost2;
+    Printf.printf "ghost3.ghc\n";
+    Ghc.print_ghc Ghc.ghost3;
+    Printf.printf "ghost4.ghc\n";
+    Ghc.print_ghc Ghc.ghost4;
 
     let m = max mapY mapX in
     adap_cell_size := 500 / m;
@@ -541,13 +567,14 @@ let _ =
             display_map (load_map_from_data frame_data 0 mapX mapY)
             (!adap_cell_size * mapX + sep);
             
-            display_int_map (load_matrix_from_data frame_data 2 mapX mapY)
-            (!adap_cell_size * 2 *mapX + 2 * sep);
+            display_couple_int_map 
+               (load_matrix_from_data Gccsim.data_to_couple frame_data 2 mapX mapY)
+                (!adap_cell_size * 2 *mapX + 2 * sep);
             (*
             display_int_map (load_matrix_from_data frame_data 1 mapX mapY)
             (!adap_cell_size * 3 *mapX + 3 * sep);
-            *)
             pause ()
+            *)
         end
     done
 

@@ -1,77 +1,77 @@
-INT 3
-MOV H,A ; H - ghost number
-INT 5 ; Get current position
-MOV C,A ; C - Current X
-MOV D,B ; D - Current Y
-INT 3
-INT 6 ; Get current status
-MOV G,B ; G - Current direction
-JEQ 34,A,2 ; If the ghost is invisible then run towards LambdaMan
-JGT 34,[H],20 ; If the last 20 steps were on empty squares (without pills) then run towards LambdaMan
-JEQ 22,G,2
-MOV A,C
-MOV B,D
-DEC B ; Try to go up
-INT 7 ; Get the content of up square
-JEQ 22,A,0 ; If we can't go up then we try to go left
-JEQ 18,A,1 ; If it's empty then we increase the consecutive empty squares counter
-MOV [H],255 ; Reset the consecutive empty squares counter
-INC [H]
-MOV A,0
-INT 0 ; Go up
-HLT
-JEQ 60,G,1
-MOV A,C
-MOV B,D
-DEC A ; Try to go left
-INT 7 ; Get the content of left square
-JEQ 33,A,0 ; If we can't go left then halt
-JEQ 30,A,1 ; If it's empty then we increase the counter
-MOV [H],255 ; Reset the counter
-INC [H]
-MOV A,3
-INT 0 ; Go left
-HLT
-INT 1
-MOV E,A ; E - LambdaMan X
-MOV F,B ; F - LambdaMan Y
-JEQ 57,C,E ; If they're equal we go up or down
-JGT 48,C,E ; If we must go left 
-JEQ 57,G,3 ; If we can't turn
-MOV A,C
-MOV B,D
-INC A ; We try to go right
-INT 7
-JEQ 57,A,0 ; If we can't go right
-MOV A,1
-INT 0 ; Go right
-HLT
-JEQ 57,G,1 ; If we can't turn
-MOV A,C
-MOV B,D
-DEC A ; We try to go left
-INT 7
-JEQ 57,A,0 ; If we can't go left
-MOV A,3
-INT 0 ; Go left
-HLT
-JEQ 76,D,F ; If they're equal then halt
-JGT 68,D,F ; If we must go up
-JEQ 76,G,0 ; If we can't turn
-MOV A,C
-MOV B,D
-INC B ; We try to go down
-INT 7
-JEQ 76,A,0 ; If we can't go down
-MOV A,2
-INT 0 ; Go down
-HLT
-JEQ 76,G,2 ; If we can't turn
-MOV A,C
-MOV B,D
-DEC B ; We try to go up
-INT 7
-JEQ 76,A,0 ; If we can't go up
-MOV A,0
-INT 0 ; Go up
-HLT
+int 3
+mov h,a
+int 5
+mov c,a
+mov d,b
+int 3
+int 6
+mov g,b
+jeq 34,a,2
+jgt 34,[h],20
+jeq 22,g,2
+mov a,c
+mov b,d
+dec b
+int 7
+jeq 22,a,0
+jeq 18,a,1
+mov [h],255
+inc [h]
+mov a,0
+int 0
+hlt
+jeq 60,g,1
+mov a,c
+mov b,d
+dec a
+int 7
+jeq 33,a,0
+jeq 30,a,1
+mov [h],255
+inc [h]
+mov a,3
+int 0
+hlt
+int 1
+mov e,a
+mov f,b
+jeq 57,c,e
+jgt 48,c,e
+jeq 57,g,3
+mov a,c
+mov b,d
+inc a
+int 7
+jeq 57,a,0
+mov a,1
+int 0
+hlt
+jeq 57,g,1
+mov a,c
+mov b,d
+dec a
+int 7
+jeq 57,a,0
+mov a,3
+int 0
+hlt
+jeq 76,d,f
+jgt 68,d,f
+jeq 76,g,0
+mov a,c
+mov b,d
+inc b
+int 7
+jeq 76,a,0
+mov a,2
+int 0
+hlt
+jeq 76,g,2
+mov a,c
+mov b,d
+dec b
+int 7
+jeq 76,a,0
+mov a,0
+int 0
+hlt
