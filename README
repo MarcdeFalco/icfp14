@@ -1,3 +1,9 @@
+Team TAUPE GOONS
+================
+
+
+MAIN COMPILER/SIMULATOR
+=======================
 compile with
 
 ocamlbuild simulateur.native
@@ -12,4 +18,25 @@ the simulator displays information taylored for this lambdaman: ghost generated
 obstacles and distance map, by extracting this information from the first
 frame.
 
+LAMBDAMAN
+=========
 The lambdman strategy is a basic greedy one.
+
+all code falls into the lambdaman folder in a specific language called PML
+(PacMaL).
+
+TOOLS
+=====
+A grid generator for maps is in maps/gridgen.py
+A static memory generator is in staticmem.py. It works by defining a lot of
+variables and using a logarithmic search to get the right variable from its
+number. This way we can get O( log 256 * map_width ) access to the map.
+There's also a O(1) queue coded in this way.
+
+TEAM MEMBERS
+============
+Marc de Falco: simulator, compiler and lambdaman code
+Mihai Dusmanu: simulator, ghost codes
+Emma Kerinec: ghost codes and maps
+Martin Guy: ghost codes and maps
+Jimmy Rogala: maps
