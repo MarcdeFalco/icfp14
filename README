@@ -1,0 +1,15 @@
+compile with
+
+ocamlbuild simulateur.native
+
+it uses menhir parser generator
+
+then ./simulateur.native <MAP>
+
+it will look at lambdaman.join, gather all source code, compile it, produce a
+lambdaman.S assembly, load it into the simulator and run it.
+the simulator displays information taylored for this lambdaman: ghost generated
+obstacles and distance map, by extracting this information from the first
+frame.
+
+The lambdman strategy is a basic greedy one.
