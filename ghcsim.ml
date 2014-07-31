@@ -61,7 +61,7 @@ let eval target_dir ghost map ghosts lambdamanpos =
         let v = cleanup v in
         match a with
         | Reg n -> if n < 8 then mac.regs.(n) <- v
-                    else raise EvalError
+                    else mac.pc <- v
         | IReg n -> mac.data.(get (Reg n)) <- v
         | Mem n -> mac.data.(n) <- v
         | Const n -> raise EvalError

@@ -276,15 +276,6 @@ let _ =
     let fruit_score = if level <= 12 then fruit_score_array.(level) else 5000
     in
 
-    Printf.printf "ghost1.ghc\n";
-    Ghc.print_ghc Ghc.ghost1;
-    Printf.printf "ghost2.ghc\n";
-    Ghc.print_ghc Ghc.ghost2;
-    Printf.printf "ghost3.ghc\n";
-    Ghc.print_ghc Ghc.ghost3;
-    Printf.printf "ghost4.ghc\n";
-    Ghc.print_ghc Ghc.ghost4;
-
     let m = max mapY mapX in
     adap_cell_size := 500 / m;
 
@@ -304,7 +295,7 @@ let _ =
         else Printf.fprintf fo "%s\n" s
     done;
     close_out fo;
-    let ghosts_code = [| Ghc.ghost1; Ghc.ghost2; Ghc.ghost3; Ghc.ghost4 |] in
+    let ghosts_code = [| Ghc.read_ghc_from_file "ghosts/cashto.ghc" |] in
     let lambdaman_start = init_lambdaman lambdaman_code in
     let ghosts_start = init_ghosts ghosts_code in
     show_map ();
@@ -573,7 +564,6 @@ let _ =
             (*
             display_int_map (load_matrix_from_data frame_data 1 mapX mapY)
             (!adap_cell_size * 3 *mapX + 3 * sep);
-            pause ()
             *)
         end
     done
@@ -593,5 +583,6 @@ let _ =
         end
     | e -> 
         Gccsim.dump_machine lambdaman.mac;
-        Printf.printf "Score :%d (tickcount : %d, max cycle : %d)\n" lambdaman.score
+        Printf.printf "Score :%d Lives:%d (tickcount : %d, max cycle : %d)\n" lambdaman.score
+        lambdaman.lives
         !tickcount !cyclemax; raise e
