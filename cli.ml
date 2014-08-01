@@ -181,7 +181,7 @@ let trace_lambdaman () =  ()
 *)
 
 let trace_score () =
-    Printf.printf "(%d,%d)," !tickcount lambdaman.score
+    Printf.printf "[%d,%d]," !tickcount lambdaman.score
 
 let trace_ghost g = ()
 let trace_fright_mode b = ()
