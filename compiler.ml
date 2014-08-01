@@ -20,14 +20,15 @@ let rec compile env (loc, e) =
         | loc::q ->
             if List.mem_assoc s loc
             then let m = get_idx s loc in
-                (if bl then LD (n,m) else ST (n,m))
+                (if bl then LD (Int32.of_int n,Int32.of_int m) 
+                       else ST (Int32.of_int n,Int32.of_int m))
             else lookup bl q s (n+1)
     in
     let rec eval_expr bt env e =
         match e with
         | SetFileInfo(e,a,b) -> currentPos := (a,b); [ FILEINFO(a,b) ] @ eval_expr bt env e
         | Nop -> []
-        | Const n -> [LDC n]
+        | Const n -> [LDC (Int32.of_int n)]
         | Atom a -> eval_expr false env a @ [ATOM]
         | Cons (a,b) -> eval_expr false env a @ eval_expr false env b @ [ CONS ]
         | Add (a,b) -> eval_expr false env a @ eval_expr false env b @ [ ADD ]
@@ -48,7 +49,8 @@ let rec compile env (loc, e) =
         | Call (f,el) ->
                 let n = List.length el in
                 List.concat (List.map (eval_expr false env) el)
-                @ [ lookup true env f 0; if bt then TAP (f,n) else AP (f,n) ]
+                @ [ lookup true env f 0; if bt then TAP (f,Int32.of_int n) else
+                    AP (f,Int32.of_int n) ]
         | Equals(a,b) -> eval_expr false env a @ eval_expr false env b @ [ CEQ ]
         | Greater(a,b) -> eval_expr false env a @ eval_expr false env b @ [ CGT ]
         | GreaterEquals(a,b) -> eval_expr false env a @ eval_expr false env b @ [ CGTE ]
@@ -140,9 +142,9 @@ let rec compile env (loc, e) =
         let label = "body"^string_of_int !lbl in
         incr lbl;
         let exprcode = 
-            (DUM (List.length loc)
+            (DUM (Int32.of_int (List.length loc))
                 :: (push_locals loc loc)) @
-                [ LDFs label; TRAP (List.length loc);
+                [ LDFs label; TRAP (Int32.of_int (List.length loc));
                   Label label ]
                 @ (eval_expr true (loc :: env) e)
                 @ [ RTN ]

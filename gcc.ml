@@ -1,30 +1,30 @@
 type instr = 
     | Label of string
-    | LDC of int 
-    | LD of int * int
-    | ST of int * int
+    | LDC of int32
+    | LD of int32 * int32
+    | ST of int32 * int32
     | ADD | SUB | MUL | DIV
     | CEQ | CGT | CGTE
     | ATOM
     | CONS | CAR | CDR
     | SELs of string * string 
-    | SEL of int * int 
+    | SEL of int32 * int32
     | TSELs of string * string 
-    | TSEL of int * int 
+    | TSEL of int32 * int32 
     | JOIN
-    | LDFs of string | LDF of int | AP of string * int
+    | LDFs of string | LDF of int32 | AP of string * int32
     | RTN
-    | DUM of int | RAP of int
+    | DUM of int32 | RAP of int32
     | DBUG | STOP
-    | TAP of string * int | TRAP of int
+    | TAP of string * int32 | TRAP of int32
     | FILEINFO of int * int
 
 let pp_instr src i =
     match i with
     | Label s -> s ^ ":"
-    | LDC n -> "LDC " ^ string_of_int n
-    | LD (a,b) -> "LD " ^ string_of_int a ^ " " ^ string_of_int b
-    | ST (a,b) -> "ST " ^ string_of_int a ^ " " ^ string_of_int b
+    | LDC n -> "LDC " ^ Int32.to_string n
+    | LD (a,b) -> "LD " ^ Int32.to_string a ^ " " ^ Int32.to_string b
+    | ST (a,b) -> "ST " ^ Int32.to_string a ^ " " ^ Int32.to_string b
     | ADD -> "ADD"
     | SUB -> "SUB"
     | MUL -> "MUL"
@@ -38,17 +38,17 @@ let pp_instr src i =
     | CDR -> "CDR"
     | TSELs (a,b) -> "TSEL " ^ a ^ " " ^ b
     | SELs (a,b) -> "SEL " ^ a ^ " " ^ b
-    | TSEL (a,b) -> "TSEL " ^ string_of_int a ^ " " ^ string_of_int b
-    | SEL (a,b) -> "SEL " ^ string_of_int a ^ " " ^ string_of_int b
+    | TSEL (a,b) -> "TSEL " ^ Int32.to_string a ^ " " ^ Int32.to_string b
+    | SEL (a,b) -> "SEL " ^ Int32.to_string a ^ " " ^ Int32.to_string b
     | JOIN -> "JOIN"
-    | AP (_,n) -> "AP " ^ string_of_int n
-    | TAP (_,n) -> "TAP " ^ string_of_int n
-    | RAP n -> "RAP " ^ string_of_int n
-    | TRAP n -> "TRAP " ^ string_of_int n
+    | AP (_,n) -> "AP " ^ Int32.to_string n
+    | TAP (_,n) -> "TAP " ^ Int32.to_string n
+    | RAP n -> "RAP " ^ Int32.to_string n
+    | TRAP n -> "TRAP " ^ Int32.to_string n
     | LDFs s -> "LDF " ^ s
-    | LDF s -> "LDF " ^ string_of_int s
+    | LDF s -> "LDF " ^ Int32.to_string s
     | RTN -> "RTN"
-    | DUM n -> "DUM " ^ string_of_int n
+    | DUM n -> "DUM " ^ Int32.to_string n
     | DBUG -> "DBUG"
     | STOP -> "STOP"
     | FILEINFO (a,b) -> "; " ^ String.sub src a (b-a)
@@ -57,7 +57,7 @@ let absolute code =
     let rec aux code acc pos = 
         match code with 
         | [] -> acc
-        | Label s::q -> aux q ((s,pos)::acc) pos
+        | Label s::q -> aux q ((s,Int32.of_int pos)::acc) pos
         (*| FILEINFO(_,_)::q -> aux q acc pos*)
         | _::q -> aux q acc (pos+1)
     in
@@ -110,8 +110,8 @@ let get_instr ope l =
     | "STOP", [] -> STOP
     | "SEL", [a;b] -> SEL (a,b)
     | "TSEL", [a;b] -> TSEL (a,b)
-    | "AP", [n] -> AP (string_of_int n, n)
-    | "TAP", [n] -> TAP (string_of_int n, n)
+    | "AP", [n] -> AP (Int32.to_string n, n)
+    | "TAP", [n] -> TAP (Int32.to_string n, n)
     | "RAP", [n] -> RAP n
     | "TRAP", [n] -> TRAP n
     | "DUM", [n] -> DUM n
@@ -126,7 +126,7 @@ let read_gcc_from_file fn =
             if s = "" then ()
             else begin
                 let elems = split_line s in
-                let i = get_instr (List.hd elems) (List.map int_of_string (List.tl elems)) in
+                let i = get_instr (List.hd elems) (List.map Int32.of_string (List.tl elems)) in
                 gccl := i :: !gccl
             end
         done;
