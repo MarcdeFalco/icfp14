@@ -151,52 +151,55 @@ let rec compile env (loc, e) =
             @ compile_fun (loc :: env) loc
     end
 
-let compile_file fn =
-    Printexc.record_backtrace true;
-
-    let s = ref "" in
-
-    let load fn =
-        let f = open_in fn in
-        let sz = in_channel_length f in
-        let sloaded = String.make sz ' ' in
-        really_input f sloaded 0 sz;
-        sloaded
-    in
-
-    let fjoin = open_in "lambdaman.join" in
-    begin try
-        while true do
-            let l = input_line fjoin in
-            if l.[0] <> ';'
-            then s := !s ^ load l
-        done;
-        failwith "Out of reach"
-    with End_of_file -> () end;
-
+let compile_string s =
     try
-        let l = Parser.main Lexer.token (Lexing.from_string !s) in
+        let l = Parser.main Lexer.token (Lexing.from_string s) in
         let code = compile [[("world", DDummy); ("unk", DDummy)]] l in
         let acode = absolute code in
-        acode, !s
+        acode, s
     with Ast.SyntaxError(loc,startpos,endpos) ->
-        let n = String.length !s in
+        let n = String.length s in
         let a = min (n-1) startpos.pos_cnum in
         let b = min (n-1) (max a endpos.pos_cnum) in
         let context = 20 in
         let a0 = max 0 (a - context) in
         let b0 = min (n-1) (b + context) in
-        let sub a b = String.sub !s a (b-a) in
+        let sub a b = String.sub s a (b-a) in
         Printf.printf "Syntax error while parsing a %s rule:\n%s***%s***%s\n"
             loc (sub a0 a) (sub a b) (sub b b0);
         failwith "Syntax error"
     | e ->
         let a, b  = !currentPos in
-        let n = String.length !s in
+        let n = String.length s in
         let context = 20 in
         let a0 = max 0 (a - context) in
         let b0 = min (n-1) (b + context) in
-        let sub a b = String.sub !s a (b-a) in
+        let sub a b = String.sub s a (b-a) in
         Printf.printf "Error while compiling:\n%s***%s***%s\n"
             (sub a0 a) (sub a b) (sub b b0);
         raise e
+
+let read_file_as_string fn =
+    let f = open_in fn in
+    let sz = in_channel_length f in
+    let sloaded = String.make sz ' ' in
+    really_input f sloaded 0 sz;
+    sloaded
+
+let compile_join () =
+    Printexc.record_backtrace true;
+
+    let s = ref "" in
+    let fjoin = open_in "lambdaman.join" in
+    begin try
+        while true do
+            let l = input_line fjoin in
+            if l.[0] <> ';'
+            then s := !s ^ read_file_as_string l
+        done;
+        failwith "Out of reach"
+    with End_of_file -> compile_string !s end
+
+let compile fn =
+    let s = read_file_as_string fn in
+    compile_string s

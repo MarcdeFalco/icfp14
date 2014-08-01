@@ -1,14 +1,13 @@
-fun length(l)
-{
-    if isempty(l)
-    then 0
-    else 1 + length(l.tl)
-}
+let w = 8+2 in
 
 fun step(state, world) {
-    (state+1, 2)
+    let d = state - w * (state / w) in
+    let n = (state / w) in
+    let d2 = n - 2 * (n / 2) in
+
+    if d <= 7
+    then (state+1, if d2 then 0 else 2)
+    else (state+1, 1)
 }
 
-let map, lambdaman, ghosts, fruit = world in
-
-(length(map), step)
+(0, step)

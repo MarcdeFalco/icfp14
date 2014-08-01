@@ -1,7 +1,7 @@
-lambdaman/static.pml
-;lambdaman/original.pml
 lambdaman/constants.pml
 lambdaman/arith.pml
+;simple.pml
+lambdaman/static.pml
 lambdaman/queue.pml
 lambdaman/list.pml
 lambdaman/staticmap.pml

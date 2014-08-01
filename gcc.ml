@@ -76,3 +76,59 @@ let absolute code =
         end :: replace (c+1) q
 
     in Array.of_list (replace 0 code)
+
+let cleanup s =
+    try
+        let i = String.index s ';' in
+        String.trim (String.sub s 0 i)
+    with Not_found -> String.trim s
+
+let split_line s =
+    let r = Str.regexp " +" in
+    Str.split r s
+
+let get_instr ope l =
+    match ope, l with
+    | "LDC", [n] -> LDC n
+    | "LDF", [n] -> LDF n
+    | "LD", [a;b] -> LD (a,b)
+    | "ST", [a;b] -> ST (a,b)
+    | "ADD", [] -> ADD
+    | "SUB", [] -> SUB
+    | "MUL", [] -> MUL
+    | "DIV", [] -> DIV
+    | "CEQ", [] -> CEQ
+    | "CGT", [] -> CGT
+    | "CGTE", [] -> CGTE
+    | "ATOM", [] -> ATOM
+    | "CONS", [] -> CONS
+    | "CAR", [] -> CAR
+    | "CDR", [] -> CDR
+    | "JOIN", [] -> JOIN
+    | "RTN", [] -> RTN
+    | "DBUG", [] -> DBUG
+    | "STOP", [] -> STOP
+    | "SEL", [a;b] -> SEL (a,b)
+    | "TSEL", [a;b] -> TSEL (a,b)
+    | "AP", [n] -> AP (string_of_int n, n)
+    | "TAP", [n] -> TAP (string_of_int n, n)
+    | "RAP", [n] -> RAP n
+    | "TRAP", [n] -> TRAP n
+    | "DUM", [n] -> DUM n
+    | s,l -> failwith (Printf.sprintf "Invalid instruction: %s" s)
+
+let read_gcc_from_file fn = 
+    let f = open_in fn in
+    let gccl = ref [] in
+    try
+        while true do
+            let s = cleanup (input_line f) in
+            if s = "" then ()
+            else begin
+                let elems = split_line s in
+                let i = get_instr (List.hd elems) (List.map int_of_string (List.tl elems)) in
+                gccl := i :: !gccl
+            end
+        done;
+        failwith "Out of reach"
+    with End_of_file -> Array.of_list (List.rev !gccl)

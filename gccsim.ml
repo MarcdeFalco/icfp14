@@ -1,4 +1,4 @@
-type data = Int of int | Cons of data * data | Closure of int * frame
+type data = Int of int32 | Cons of data * data | Closure of int * frame
 and frame = { parent : frame; locals : data array; mutable dummy : bool }
 
 type address = Ret of int * frame | Join of int | Stop
@@ -27,7 +27,7 @@ let dummy_machine () =
 
 
 let rec print_data d = match d with
-    | Int n -> print_int n
+    | Int n -> print_int (Int32.to_int n)
     | Cons (a,b) -> print_data a;
         print_string ",";
         print_data b
@@ -72,7 +72,7 @@ let data_to_couple d =
 
 let rec data_to_list f d =
     match d with
-    | Int 0 -> []
+    | Int n when n = Int32.zero -> []
     | Cons(a,b) -> f a :: data_to_list f b
 
 let get_main_frame_data mac =
@@ -107,6 +107,7 @@ exception UnhandledInstruction
 
 let currentPos = ref (0,0)
 
+(*
 let calls = Hashtbl.create 42 
 
 let register_call f tail =
@@ -115,6 +116,7 @@ let register_call f tail =
     then  Hashtbl.add calls f (0,0);
     let cb, ct = Hashtbl.find calls f in
     Hashtbl.replace calls f (if tail then (cb,ct+1) else (cb+1,ct))
+*)
 
 let eval mac =
     let instr = mac.code.(mac.pc) in
@@ -124,7 +126,7 @@ let eval mac =
     *)
     match instr with
     | FILEINFO (a,b) -> currentPos := (a,b); mac.pc <- mac.pc + 1
-    | LDC n -> Stack.push (Int n) mac.data; mac.pc <- mac.pc + 1
+    | LDC n -> Stack.push (Int (Int32.of_int n)) mac.data; mac.pc <- mac.pc + 1
     | LD (n, i) ->
         let frame = ref mac.frame in
         let rn = ref n in
@@ -136,34 +138,34 @@ let eval mac =
         mac.pc <- mac.pc + 1
     | ADD -> let a = intofpop mac in
         let b = intofpop mac in
-        Stack.push (Int (a+b)) mac.data;
+        Stack.push (Int (Int32.add a b)) mac.data;
         mac.pc <- mac.pc + 1
     | SUB -> let a = intofpop mac in
         let b = intofpop mac in
-        Stack.push (Int (b-a)) mac.data;
+        Stack.push (Int (Int32.sub b a)) mac.data;
         mac.pc <- mac.pc + 1
     | MUL -> let a = intofpop mac in
         let b = intofpop mac in
-        Stack.push (Int (a*b)) mac.data;
+        Stack.push (Int (Int32.mul a b)) mac.data;
         mac.pc <- mac.pc + 1
     | DIV -> let a = intofpop mac in
         let b = intofpop mac in
-        Stack.push (Int (b/a)) mac.data;
+        Stack.push (Int (Int32.div b a)) mac.data;
         mac.pc <- mac.pc + 1
     | CEQ -> let a = intofpop mac in
         let b = intofpop mac in
-        Stack.push (Int (if a = b then 1 else 0)) mac.data;
+        Stack.push (Int (if a = b then Int32.one else Int32.zero)) mac.data;
         mac.pc <- mac.pc + 1
     | CGT -> let a = intofpop mac in
         let b = intofpop mac in
-        Stack.push (Int (if a < b then 1 else 0)) mac.data;
+        Stack.push (Int (if a < b then Int32.one else Int32.zero)) mac.data;
         mac.pc <- mac.pc + 1
     | CGTE -> let a = intofpop mac in
         let b = intofpop mac in
-        Stack.push (Int (if a <= b then 1 else 0)) mac.data;
+        Stack.push (Int (if a <= b then Int32.one else Int32.zero)) mac.data;
         mac.pc <- mac.pc + 1
     | ATOM -> let a = Stack.pop mac.data in
-        Stack.push (Int (match a with Int _ -> 1 | _ -> 0)) mac.data;
+        Stack.push (Int (match a with Int _ -> Int32.one | _ -> Int32.zero)) mac.data;
         mac.pc <- mac.pc + 1
     | CONS -> 
         let b = Stack.pop mac.data in 
@@ -178,16 +180,18 @@ let eval mac =
         mac.pc <- mac.pc + 1
     | SEL(t,f) -> let x = intofpop mac in
         Stack.push (Join (mac.pc+1)) mac.control;
-        mac.pc <- if x = 0 then f else t
+        mac.pc <- if x = Int32.zero then f else t
     | JOIN -> let x = joinofpop mac in
         mac.pc <- x
     | LDF f -> let c = Closure (f, mac.frame) in
         Stack.push c mac.data;
         mac.pc <- mac.pc + 1
     | AP (sf,n) -> 
+        (*
         register_call sf false;
+        *)
         let f, e = closofpop mac in
-        let fp = { parent = e; locals = Array.create n (Int 42); dummy = false } in
+        let fp = { parent = e; locals = Array.create n (Int Int32.zero); dummy = false } in
         for i = n-1 downto 0 do
             fp.locals.(i) <- Stack.pop mac.data
         done;
@@ -204,7 +208,7 @@ let eval mac =
         | _ -> raise ControlMismatch
         end
     | DUM n ->
-        let fp = { parent = mac.frame; locals = Array.create n (Int 42); dummy = true } in
+        let fp = { parent = mac.frame; locals = Array.create n (Int Int32.zero); dummy = true } in
         mac.frame <- fp;
         mac.pc <- mac.pc + 1
     | RAP n ->
@@ -218,11 +222,13 @@ let eval mac =
         mac.frame <- fp;
         mac.pc <- f
     | TSEL(t,f) -> let x = intofpop mac in
-        mac.pc <- if x = 0 then f else t
+        mac.pc <- if x = Int32.zero then f else t
     | TAP (sf,n) -> 
+        (*
         register_call sf true;
+        *)
         let f, e = closofpop mac in
-        let fp = { parent = e; locals = Array.create n (Int 42); dummy = false } in
+        let fp = { parent = e; locals = Array.create n (Int Int32.zero); dummy = false } in
         for i = n-1 downto 0 do
             fp.locals.(i) <- Stack.pop mac.data
         done;
@@ -254,22 +260,31 @@ let eval mac =
 exception CycleExceeded
 
 exception GccRun of string * (int * int)
-let run mac =
+
+let run ?verbose:(bverb=false) mac =
     let cycle = ref 0 in
     try
-        Hashtbl.clear calls;
+        (* Hashtbl.clear calls; *)
         while !cycle < 3072000 do
-            incr cycle; eval mac
+            incr cycle;
+            eval mac;
+            if bverb
+            then begin
+                Printf.printf "Instruction %d\n" !cycle;
+                dump_machine mac
+            end
         done;
+        (*
         Hashtbl.iter 
             (fun  f c -> let base, tail = c in Printf.printf "%s : %d + %d\n" f base tail)
             calls;
+        *)
         raise CycleExceeded
     with MachineStop -> !cycle
          | e -> let se = Printexc.to_string e in raise (GccRun(se, !currentPos))
 
 let main mac world codes =
-    let rec fp = { parent = fp; locals = Array.create 2 (Int 42); dummy = false } in
+    let rec fp = { parent = fp; locals = Array.create 2 (Int Int32.zero); dummy = false } in
     fp.locals.(0) <- world;
     fp.locals.(1) <- codes;
     mac.frame <- fp;
@@ -281,7 +296,7 @@ let main mac world codes =
 
 let step mac state world step_closure =
     let Closure(f,e) = step_closure in
-    let fp = { parent = e; locals = Array.create 2 (Int 42); dummy = false } in
+    let fp = { parent = e; locals = Array.create 2 (Int Int32.zero); dummy = false } in
     fp.locals.(0) <- state;
     fp.locals.(1) <- world;
     Stack.push Stop mac.control;
@@ -290,4 +305,4 @@ let step mac state world step_closure =
     let cycle = run mac in
     (*dump_machine mac;*)
     let state, Int dir = consofpop mac in
-    (state, Common.dir_of_int dir, cycle)
+    (state, Common.dir_of_int (Int32.to_int dir), cycle)

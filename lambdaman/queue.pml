@@ -1,6 +1,6 @@
 let queue_start = 0 in
 let queue_end = 0 in
-let queue_size = 1000 in
+let queue_size = 40 in
 fun queue_push(v)
 {
     let next = mod(queue_end+1, queue_size) in
