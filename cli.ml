@@ -181,7 +181,10 @@ let trace_lambdaman () =  ()
 *)
 
 let trace_score () =
-    Printf.printf "[%d,%d]," !tickcount lambdaman.score
+     Printf.printf "[%d,%d]," !tickcount lambdaman.score
+    (*
+    show_map()
+    *)
 
 let trace_ghost g = ()
 let trace_fright_mode b = ()
@@ -415,7 +418,7 @@ let run_sim map ghosts_code lambdaman_code =
         if !tickcount = 127 * mapX * mapY * 16
         then begin lambdaman.lives <- 0 end;
 
-        if !tickcount = 127 * 200 || !tickcount = 127 * 200 
+        if !tickcount = 127 * 200 || !tickcount = 127 * 400 
         then begin fruit := !tickcount + 80 * 127 end;
         if !tickcount = !fruit
         then begin fruit := 0 end;
