@@ -256,7 +256,7 @@ let eval mac =
         !frame.locals.(Int32.to_int i) <- Stack.pop mac.data;
         mac.pc <- Int32.succ mac.pc
     | STOP -> raise MachineStop
-    | DBUG -> print_data (Stack.pop mac.data); print_newline (); flush stdout;
+    | DBUG -> (* print_data (Stack.pop mac.data); print_newline (); flush stdout;*)
             mac.pc <- Int32.succ mac.pc
     | _ -> raise UnhandledInstruction
 
