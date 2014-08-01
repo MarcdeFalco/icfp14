@@ -180,19 +180,22 @@ let trace_lambdaman () =  ()
         (int_of_dir lambdaman.dir)
 *)
 
+let trace_score () =
+    Printf.printf "(%d,%d)," !tickcount lambdaman.score
+
 let trace_ghost g = ()
 let trace_fright_mode b = ()
-let trace_pill_eaten () = ()
-let trace_powerpill_eaten () = ()
-let trace_fruit_eaten () = ()
-let trace_ghost_eaten g = ()
+let trace_pill_eaten () = trace_score ()
+let trace_powerpill_eaten () = trace_score ()
+let trace_fruit_eaten () = trace_score ()
+let trace_ghost_eaten g = trace_score ()
 
 let ticks_lost = ref []
 let trace_life_lost () =
     ticks_lost := !tickcount :: !ticks_lost
 
 let trace_game s = 
-    Printf.printf "%s %d %d %d ["
+    Printf.printf "\n%s,%d,%d,%d\n["
     s
     lambdaman.score
     lambdaman.lives
