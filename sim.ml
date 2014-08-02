@@ -324,11 +324,13 @@ let run_sim map ghosts_code lambdaman_code =
     let run_lambdaman () =
         let gccworld = encode_world () in
 
-        let new_state, dir, cycle = 
-            Gccsim.step lambdaman.mac lambdaman.state gccworld step_closure in
-        lambdaman.state <- new_state;
-        lambdaman.dir <- dir;
-        cyclemax := max !cyclemax cycle
+        try
+            let new_state, dir, cycle = 
+                Gccsim.step lambdaman.mac lambdaman.state gccworld step_closure in
+            lambdaman.state <- new_state;
+            lambdaman.dir <- dir;
+            cyclemax := max !cyclemax cycle
+        with _ -> ()
     in
 
     let run_ghosts ?verbose:(bverb=false) i =
