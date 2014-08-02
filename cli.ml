@@ -34,9 +34,11 @@ let _ =
             try
                 let _ = run_sim map ghosts_code lambdaman_code in
                 ()
-            with e -> 
+            with e -> ()
+                (*
                 Printexc.print_backtrace stdout;
                 raise e
+                *)
         end
         | "compile" -> begin
             let gcc, src = Compiler.compile Sys.argv.(2) in
