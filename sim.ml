@@ -399,18 +399,23 @@ let run_sim map ghosts_code lambdaman_code =
                     else tick_lambda_normal
         end;
         (* Update ghosts *)
+        let olddir_vect = Array.map (fun g -> g.Ghcsim.dir) !ghosts in
+        for i = 0 to Array.length !ghosts - 1 do
+            if ghosts_tick.(i) = !tickcount
+            then begin
+                trace_ghost i;
+                run_ghosts ~verbose:false i;
+            end
+        done;
+
+        (* Then move ghosts *)
         for i = 0 to Array.length !ghosts - 1 do
             if ghosts_tick.(i) = !tickcount
             then begin
                 let g = !ghosts.(i) in
 
                 let nfree = free_adjacent g.Ghcsim.pos.x g.Ghcsim.pos.y in
-                let olddir = g.Ghcsim.dir in
-
-                update := true;
-
-                trace_ghost i;
-                run_ghosts ~verbose:(!tickcount >= 13000 && i = 2) i;
+                let olddir = olddir_vect.(i) in
 
                 let illegal d = not (free (next g.Ghcsim.pos d))
                     || (nfree > 1 && opposite olddir d
