@@ -114,7 +114,7 @@ let eval target_dir ghost map ghosts lambdamanpos =
     end
     | HLT -> raise Stop
 
-let run ghost map ghosts lambdamanpos =
+let run ?verbose:(bverb=false) ghost map ghosts lambdamanpos =
     let mac = ghost.mac in
     let target_dir = ref ghost.dir in
     try
@@ -122,19 +122,33 @@ let run ghost map ghosts lambdamanpos =
         mac.pc <- 0;
         while true do
             let oldpc = mac.pc in
+            (if bverb
+            then begin
+                Printf.printf "-> ghost%d: %d A%d B%d C%d D%d E%d F%d G%d H%d [%s]\n"
+                (index ghosts ghost)
+                mac.pc mac.regs.(0)
+                mac.regs.(1) mac.regs.(2)
+                mac.regs.(3)
+                mac.regs.(4)
+                mac.regs.(5)
+                mac.regs.(6)
+                mac.regs.(7)
+                (string_of_ghc_instr mac.code.(mac.pc))
+            end);
             eval target_dir ghost map ghosts lambdamanpos;
-            (*
-            Printf.printf "auto ghost%d: %d %d %d %d %d %d %d %d %d\n"
-            (index ghosts ghost)
-            mac.pc mac.regs.(0)
-            mac.regs.(1) mac.regs.(2)
-            mac.regs.(3)
-            mac.regs.(4)
-            mac.regs.(5)
-            mac.regs.(6)
-            mac.regs.(7);
-            flush stdout;
-            *)
+            (if bverb
+            then begin
+                Printf.printf "<- ghost%d: %d A%d B%d C%d D%d E%d F%d G%d H%d\n"
+                (index ghosts ghost)
+                mac.pc mac.regs.(0)
+                mac.regs.(1) mac.regs.(2)
+                mac.regs.(3)
+                mac.regs.(4)
+                mac.regs.(5)
+                mac.regs.(6)
+                mac.regs.(7);
+                flush stdout
+            end);
             if oldpc = mac.pc
             then mac.pc <- mac.pc + 1;
             incr instr_count;

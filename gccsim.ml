@@ -122,7 +122,7 @@ let eval mac =
     let instr = mac.code.(Int32.to_int mac.pc) in
     (*
     dump_machine mac;
-    Printf.printf "[%d] %s\n" mac.pc (Gcc.pp_instr instr);
+    Printf.printf "[%d] %s\n" (Int32.to_int mac.pc) (Gcc.pp_instr "" instr);
     *)
     match instr with
     | FILEINFO (a,b) -> currentPos := (a,b); mac.pc <- Int32.succ mac.pc
@@ -284,7 +284,9 @@ let run ?verbose:(bverb=false) mac =
         *)
         raise CycleExceeded
     with MachineStop -> !cycle
+    (*
          | e -> let se = Printexc.to_string e in raise (GccRun(se, !currentPos))
+     *)
 
 let main mac world codes =
     let rec fp = { parent = fp; locals = Array.create 2 (Int Int32.zero); dummy = false } in

@@ -84,7 +84,7 @@ let cleanup s =
     with Not_found -> String.trim s
 
 let split_line s =
-    let r = Str.regexp " +" in
+    let r = Str.regexp "[ \t]+" in
     Str.split r s
 
 let get_instr ope l =
@@ -126,8 +126,10 @@ let read_gcc_from_file fn =
             if s = "" then ()
             else begin
                 let elems = split_line s in
-                let i = get_instr (List.hd elems) (List.map Int32.of_string (List.tl elems)) in
-                gccl := i :: !gccl
+                try
+                    let i = get_instr (List.hd elems) (List.map Int32.of_string (List.tl elems)) in
+                    gccl := i :: !gccl
+                with _ -> ()
             end
         done;
         failwith "Out of reach"
