@@ -15,7 +15,7 @@ type instr =
     | LDFs of string | LDF of int32 | AP of string * int32
     | RTN
     | DUM of int32 | RAP of int32
-    | DBUG | STOP
+    | DBUG | STOP | BRK
     | TAP of string * int32 | TRAP of int32
     | FILEINFO of int * int
 
@@ -115,6 +115,7 @@ let get_instr ope l =
     | "RAP", [n] -> RAP n
     | "TRAP", [n] -> TRAP n
     | "DUM", [n] -> DUM n
+    | "BRK", [] -> BRK
     | s,l -> failwith (Printf.sprintf "Invalid instruction: %s" s)
 
 let read_gcc_from_file fn = 
@@ -129,7 +130,7 @@ let read_gcc_from_file fn =
                 try
                     let i = get_instr (List.hd elems) (List.map Int32.of_string (List.tl elems)) in
                     gccl := i :: !gccl
-                with _ -> ()
+                with e -> raise e
             end
         done;
         failwith "Out of reach"

@@ -258,6 +258,7 @@ let eval mac =
     | STOP -> raise MachineStop
     | DBUG -> (* print_data (Stack.pop mac.data); print_newline (); flush stdout;*)
             mac.pc <- Int32.succ mac.pc
+    | BRK -> mac.pc <- Int32.succ mac.pc
     | _ -> raise UnhandledInstruction
 
 exception CycleExceeded
