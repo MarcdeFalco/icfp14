@@ -264,10 +264,12 @@ let trace_game s =
 
 let trace_game_won () = trace_game "W"
 let trace_game_lost () = trace_game "L"
+let trace_error () = trace_game "E"
 
 let refresh_display = ref (fun () -> ())
 
 exception FoundPill
+exception GameEnded
 
 let run_sim map ghosts_code lambdaman_code =
     let cyclemax = ref 0 in
@@ -410,7 +412,7 @@ let run_sim map ghosts_code lambdaman_code =
                 update := true;
 
                 trace_ghost i;
-                run_ghosts ~verbose:(!tickcount >= 13000 && i = 2) i;
+                run_ghosts ~verbose:false i;
 
                 let illegal d = not (free (next g.Ghcsim.pos d))
                     || (nfree > 1 && opposite olddir d
@@ -555,14 +557,14 @@ let run_sim map ghosts_code lambdaman_code =
         then begin
             lambdaman.score <- (lambdaman.lives + 1) * lambdaman.score;
             trace_game_won ();
-            failwith "Game won"
+            raise GameEnded
         end;
 
         (* Step 6 *)
         if lambdaman.lives = 0
         then begin 
             trace_game_lost ();
-            failwith "Game lost" 
+            raise GameEnded
         end;
 
         incr tickcount;
@@ -598,16 +600,17 @@ let run_sim map ghosts_code lambdaman_code =
             let a0 = max 0 (a - context) in
             let b0 = min (n-1) (b + context) in
             let sub a b = String.sub s a (b-a) in
-            Printf.printf "Exception %s" se;
-            
+            Printf.eprintf "Exception %s" se;
+            trace_error () 
             (*
             "while evaluating:\n%s***%s***%s\n"
                 se (sub a0 a) (sub a b) (sub b b0);
             *)
             (* Gccsim.dump_machine lambdaman.mac; *)
-            raise e
+            (* raise e *)
         end
-    | e -> raise e
+    | GameEnded -> ()
+    | e -> trace_error () (* raise e *)
         (* Gccsim.dump_machine lambdaman.mac; *)
         (* Printf.printf "Score :%d Lives:%d (tickcount : %d, max cycle : %d)\n" lambdaman.score
         lambdaman.lives
