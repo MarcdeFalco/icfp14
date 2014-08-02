@@ -265,11 +265,13 @@ exception CycleExceeded
 
 exception GccRun of string * (int * int)
 
-let run ?verbose:(bverb=false) mac =
+let run ?verbose:(bverb=false) bmain mac =
     let cycle = ref 0 in
+    let t = Sys.time () in
     try
         (* Hashtbl.clear calls; *)
-        while !cycle < 3072000 do
+        while (bmain && Sys.time() < t +. 60.0)
+            || (not bmain && !cycle < 3072000) do
             incr cycle;
             eval mac;
             if bverb
@@ -295,7 +297,7 @@ let main mac world codes =
     fp.locals.(1) <- codes;
     mac.frame <- fp;
     mac.pc <- Int32.zero;
-    run mac;
+    run true mac;
     (*dump_machine mac;*)
     let state, step_closure = consofpop mac in
     (state, step_closure)
@@ -308,7 +310,7 @@ let step mac state world step_closure =
     Stack.push Stop mac.control;
     mac.frame <- fp;
     mac.pc <- f;
-    let cycle = run mac in
+    let cycle = run false mac in
     (*dump_machine mac;*)
     let state, Int dir = consofpop mac in
     (state, Common.dir_of_int (Int32.to_int dir), cycle)
