@@ -21,7 +21,7 @@ let _ =
             let gcc = Gcc.read_gcc_from_file gcc_fn in
             let mac = Gccsim.dummy_machine () in
             Gccsim.init_machine mac gcc;
-            let end_cycle = Gccsim.run ~verbose:true mac in
+            let end_cycle = Gccsim.run ~verbose:true true mac in
             Printf.printf "Execution ended after %d cycles.\n" end_cycle
         end;
         | "sim" -> begin
@@ -39,6 +39,13 @@ let _ =
                 Printexc.print_backtrace stdout;
                 raise e
                 *)
+        end
+        | "compilejoin" -> begin
+            let gcc, src = Compiler.compile_join () in
+            for i = 0 to Array.length gcc - 1 do
+                print_string (Gcc.pp_instr src gcc.(i));
+                print_newline ()
+            done
         end
         | "compile" -> begin
             let gcc, src = Compiler.compile Sys.argv.(2) in
