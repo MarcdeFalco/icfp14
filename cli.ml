@@ -40,6 +40,13 @@ let _ =
                 raise e
                 *)
         end
+        | "compilejoin" -> begin
+            let gcc, src = Compiler.compile_join () in
+            for i = 0 to Array.length gcc - 1 do
+                print_string (Gcc.pp_instr src gcc.(i));
+                print_newline ()
+            done
+        end
         | "compile" -> begin
             let gcc, src = Compiler.compile Sys.argv.(2) in
             for i = 0 to Array.length gcc - 1 do

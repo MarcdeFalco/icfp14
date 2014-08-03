@@ -417,7 +417,7 @@ let cleanup s =
 
 let get_ope s =
     let i = ref 0 in
-    while !i < String.length s && s.[!i] <> ' ' do
+    while !i < String.length s && s.[!i] <> ' ' && s.[!i] <> '\t' do
         incr i
     done;
     String.uppercase (String.sub s 0 !i), 
@@ -425,7 +425,7 @@ let get_ope s =
         then "" else String.sub s (!i+1) (String.length s - !i - 1)
 
 let remove_space s =
-    let r = Str.regexp " " in
+    let r = Str.regexp "[ \t]" in
     Str.global_replace r "" s
 
 let reg_of_string s =
@@ -464,7 +464,9 @@ let get_instr ope l =
     | "JEQ", [Const n;a;b] -> JEQ(n,a,b)
     | "JGT", [Const n;a;b] -> JGT(n,a,b)
     | "HLT", [] -> HLT
-    | _ -> failwith "Invalid instruction"
+    | _ -> 
+        Printf.printf "Unrecognized ope : %s\n" ope;
+        failwith "Invalid instruction"
 
 let read_ghc_from_file fn = 
     let f = open_in fn in
