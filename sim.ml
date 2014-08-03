@@ -407,8 +407,10 @@ let run_sim map ghosts_code lambdaman_code =
         for i = 0 to Array.length !ghosts - 1 do
             if ghosts_tick.(i) = !tickcount
             then begin
-                trace_ghost i;
-                run_ghosts ~verbose:false i;
+                try
+                    trace_ghost i;
+                    run_ghosts ~verbose:false i;
+                with e -> ()
             end
         done;
 
@@ -608,7 +610,7 @@ let run_sim map ghosts_code lambdaman_code =
             let b0 = min (n-1) (b + context) in
             let sub a b = String.sub s a (b-a) in
             Printf.eprintf "Exception %s" se;
-            trace_error () 
+            trace_error () ;
             (*
             "while evaluating:\n%s***%s***%s\n"
                 se (sub a0 a) (sub a b) (sub b b0);
@@ -617,7 +619,8 @@ let run_sim map ghosts_code lambdaman_code =
             (* raise e *)
         end
     | GameEnded -> ()
-    | e -> trace_error () (* raise e *)
+    | e -> trace_error () ;
+         (* raise e *)
         (* Gccsim.dump_machine lambdaman.mac; *)
         (* Printf.printf "Score :%d Lives:%d (tickcount : %d, max cycle : %d)\n" lambdaman.score
         lambdaman.lives
