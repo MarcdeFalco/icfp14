@@ -101,7 +101,8 @@ let eval target_dir ghost map ghosts lambdamanpos =
             mac.regs.(0) <- int_of_vit g.vit;
             mac.regs.(1) <- Common.int_of_dir g.dir
         | 7 -> mac.regs.(0) <- Common.int_of_cell map.(mac.regs.(1)).(mac.regs.(0))
-        | 8 -> Printf.printf "trace ghost%d: %d %d %d %d %d %d %d %d %d\n"
+        | 8 -> () 
+        (*Printf.printf "trace ghost%d: %d %d %d %d %d %d %d %d %d\n"
             (index ghosts ghost)
             mac.pc mac.regs.(0)
             mac.regs.(1) mac.regs.(2)
@@ -110,7 +111,7 @@ let eval target_dir ghost map ghosts lambdamanpos =
             mac.regs.(5)
             mac.regs.(6)
             mac.regs.(7);
-            flush stdout
+            flush stdout *)
     end
     | HLT -> raise Stop
 
