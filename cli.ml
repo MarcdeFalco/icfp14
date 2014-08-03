@@ -21,7 +21,7 @@ let _ =
             let gcc = Gcc.read_gcc_from_file gcc_fn in
             let mac = Gccsim.dummy_machine () in
             Gccsim.init_machine mac gcc;
-            let end_cycle = Gccsim.run ~verbose:true mac in
+            let end_cycle = Gccsim.run ~verbose:true true mac in
             Printf.printf "Execution ended after %d cycles.\n" end_cycle
         end;
         | "sim" -> begin
