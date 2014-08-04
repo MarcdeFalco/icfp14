@@ -19,6 +19,40 @@ type instr =
     | TAP of string * int32 | TRAP of int32
     | FILEINFO of int * int
 
+let pp_mnemo i =
+    match i with
+    | Label s -> failwith "No mnemo"
+    | LDC n -> "LDC"
+    | LD (a,b) -> "LD"
+    | ST (a,b) -> "ST"
+    | ADD -> "ADD"
+    | SUB -> "SUB"
+    | MUL -> "MUL"
+    | DIV -> "DIV"
+    | CEQ -> "CEQ"
+    | CGT -> "CGT"
+    | CGTE -> "CGTE"
+    | ATOM -> "ATOM"
+    | CONS -> "CONS"
+    | CAR -> "CAR"
+    | CDR -> "CDR"
+    | TSELs (a,b) -> "TSEL"
+    | SELs (a,b) -> "SEL"
+    | TSEL (a,b) -> "TSEL"
+    | SEL (a,b) -> "SEL"
+    | JOIN -> "JOIN"
+    | AP (_,n) -> "AP"
+    | TAP (_,n) -> "TAP"
+    | RAP n -> "RAP"
+    | TRAP n -> "TRAP"
+    | LDFs s -> "LDF"
+    | LDF s -> "LDF"
+    | RTN -> "RTN"
+    | DUM n -> "DUM"
+    | DBUG -> "DBUG"
+    | STOP -> "STOP"
+    | FILEINFO (a,b) -> failwith "No mnemo"
+
 let pp_instr src i =
     match i with
     | Label s -> s ^ ":"
@@ -135,3 +169,7 @@ let read_gcc_from_file fn =
         done;
         failwith "Out of reach"
     with End_of_file -> Array.of_list (List.rev !gccl)
+
+
+type data = Int of int32 | Cons of data * data | Closure of int32 * frame
+and frame = { ancestors : frame array; locals : data array; mutable dummy : bool }

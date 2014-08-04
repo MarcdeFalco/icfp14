@@ -189,8 +189,6 @@ let read_file_as_string fn =
     sloaded
 
 let compile_join () =
-    Printexc.record_backtrace true;
-
     let s = ref "" in
     let fjoin = open_in "lambdaman.join" in
     begin try

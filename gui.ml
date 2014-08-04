@@ -81,8 +81,10 @@ let show_map () = display_map !map 0;
     draw_string (Printf.sprintf
         "tick:%d   score:%d    lives:%d     vit:%d     fruit:%d"
         !tickcount lambdaman.score
-        lambdaman.lives lambdaman.vit !fruit);
+        lambdaman.lives lambdaman.vit !fruit)
+    (*
     pause ()
+    *)
 
 
 let _ =
@@ -92,7 +94,7 @@ let _ =
     let mapX = Array.length !map.(0) in
     let m = max mapY mapX in
     refresh_display := show_map;
-    adap_cell_size := 500 / m;
+    adap_cell_size := 1000 / m;
 
     let cell_size = !adap_cell_size in
     let szX = cell_size * mapX in

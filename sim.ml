@@ -14,12 +14,12 @@ type lambdaman = {
     mutable dir : direction;
     mutable score : int;
     mac : Gccsim.machine;
-    mutable state : Gccsim.data
+    mutable state : Gcc.data
     }
 
 let lambdaman = { vit = 0; pos = { x=0; y=0 };
     lives = 3; dir = UP; score = 0; mac = Gccsim.dummy_machine (); state =
-        Gccsim.Int Int32.zero }
+        Gcc.Int Int32.zero }
 
 let ghosts : Ghcsim.ghost array ref = ref [||]
 
@@ -119,93 +119,93 @@ let init_ghosts codes =
 
 let encode_arg a =
     match a with
-    | Ghc.Reg n -> Gccsim.Cons(Gccsim.Int Int32.zero, Gccsim.Int (Int32.of_int n))
-    | Ghc.IReg n -> Gccsim.Cons(Gccsim.Int Int32.one, Gccsim.Int (Int32.of_int n))
-    | Ghc.Const n -> Gccsim.Cons(Gccsim.Int (Int32.of_int 2), Gccsim.Int (Int32.of_int n))
-    | Ghc.Mem n -> Gccsim.Cons(Gccsim.Int (Int32.of_int 3), Gccsim.Int (Int32.of_int n))
+    | Ghc.Reg n -> Gcc.Cons(Gcc.Int Int32.zero, Gcc.Int (Int32.of_int n))
+    | Ghc.IReg n -> Gcc.Cons(Gcc.Int Int32.one, Gcc.Int (Int32.of_int n))
+    | Ghc.Const n -> Gcc.Cons(Gcc.Int (Int32.of_int 2), Gcc.Int (Int32.of_int n))
+    | Ghc.Mem n -> Gcc.Cons(Gcc.Int (Int32.of_int 3), Gcc.Int (Int32.of_int n))
 
-let encode_int n = Gccsim.Int (Int32.of_int n)
+let encode_int n = Gcc.Int (Int32.of_int n)
 
 let encode_ghost_code g =
-    let gcccode = ref (Gccsim.Int Int32.zero) in
+    let gcccode = ref (Gcc.Int Int32.zero) in
     for i = Array.length g - 1 downto 0 do
         let instr = g.(i) in
         let gccinstr = match instr with
-        | Ghc.MOV(a,b) -> Gccsim.Cons(Gccsim.Int (Int32.of_int 0), 
-            Gccsim.Cons(encode_arg a, Gccsim.Cons(encode_arg b, Gccsim.Int Int32.zero)))
-        | Ghc.INC a -> Gccsim.Cons(Gccsim.Int (Int32.of_int 1),  
-            Gccsim.Cons(encode_arg a, Gccsim.Int Int32.zero))
-        | Ghc.DEC a -> Gccsim.Cons(Gccsim.Int (Int32.of_int 2),  
-            Gccsim.Cons(encode_arg a, Gccsim.Int Int32.zero))
-        | Ghc.ADD(a,b) -> Gccsim.Cons(Gccsim.Int (Int32.of_int 3), 
-            Gccsim.Cons(encode_arg a, Gccsim.Cons(encode_arg b, Gccsim.Int Int32.zero)))
-        | Ghc.SUB(a,b) -> Gccsim.Cons(Gccsim.Int (Int32.of_int 4), 
-            Gccsim.Cons(encode_arg a, Gccsim.Cons(encode_arg b, Gccsim.Int Int32.zero)))
-        | Ghc.MUL(a,b) -> Gccsim.Cons(Gccsim.Int (Int32.of_int 5), 
-            Gccsim.Cons(encode_arg a, Gccsim.Cons(encode_arg b, Gccsim.Int Int32.zero)))
-        | Ghc.DIV(a,b) -> Gccsim.Cons(Gccsim.Int (Int32.of_int 6), 
-            Gccsim.Cons(encode_arg a, Gccsim.Cons(encode_arg b, Gccsim.Int Int32.zero)))
-        | Ghc.AND(a,b) -> Gccsim.Cons(Gccsim.Int (Int32.of_int 7), 
-            Gccsim.Cons(encode_arg a, Gccsim.Cons(encode_arg b, Gccsim.Int Int32.zero)))
-        | Ghc.OR(a,b) -> Gccsim.Cons(Gccsim.Int (Int32.of_int 8), 
-            Gccsim.Cons(encode_arg a, Gccsim.Cons(encode_arg b, Gccsim.Int Int32.zero)))
-        | Ghc.XOR(a,b) -> Gccsim.Cons(Gccsim.Int (Int32.of_int 9), 
-            Gccsim.Cons(encode_arg a, Gccsim.Cons(encode_arg b, Gccsim.Int Int32.zero)))
-        | Ghc.JLT(n,a,b) -> Gccsim.Cons(Gccsim.Int (Int32.of_int 10), 
-            Gccsim.Cons(encode_int n, Gccsim.Cons(encode_arg a, Gccsim.Cons(encode_arg b, Gccsim.Int Int32.zero))))
-        | Ghc.JEQ(n,a,b) -> Gccsim.Cons(Gccsim.Int (Int32.of_int 11), 
-            Gccsim.Cons(encode_int n, Gccsim.Cons(encode_arg a, Gccsim.Cons(encode_arg b, Gccsim.Int Int32.zero))))
-        | Ghc.JGT(n,a,b) -> Gccsim.Cons(Gccsim.Int (Int32.of_int 12), 
-            Gccsim.Cons(encode_int n, Gccsim.Cons(encode_arg a, Gccsim.Cons(encode_arg b, Gccsim.Int Int32.zero))))
-        | Ghc.INT n -> Gccsim.Cons(Gccsim.Int (Int32.of_int 13),  
-            Gccsim.Cons(encode_int n, Gccsim.Int Int32.zero))
-        | Ghc.HLT -> Gccsim.Cons(Gccsim.Int (Int32.of_int 14),  Gccsim.Int Int32.zero)
-        in gcccode := Gccsim.Cons(gccinstr, !gcccode)
+        | Ghc.MOV(a,b) -> Gcc.Cons(Gcc.Int (Int32.of_int 0), 
+            Gcc.Cons(encode_arg a, Gcc.Cons(encode_arg b, Gcc.Int Int32.zero)))
+        | Ghc.INC a -> Gcc.Cons(Gcc.Int (Int32.of_int 1),  
+            Gcc.Cons(encode_arg a, Gcc.Int Int32.zero))
+        | Ghc.DEC a -> Gcc.Cons(Gcc.Int (Int32.of_int 2),  
+            Gcc.Cons(encode_arg a, Gcc.Int Int32.zero))
+        | Ghc.ADD(a,b) -> Gcc.Cons(Gcc.Int (Int32.of_int 3), 
+            Gcc.Cons(encode_arg a, Gcc.Cons(encode_arg b, Gcc.Int Int32.zero)))
+        | Ghc.SUB(a,b) -> Gcc.Cons(Gcc.Int (Int32.of_int 4), 
+            Gcc.Cons(encode_arg a, Gcc.Cons(encode_arg b, Gcc.Int Int32.zero)))
+        | Ghc.MUL(a,b) -> Gcc.Cons(Gcc.Int (Int32.of_int 5), 
+            Gcc.Cons(encode_arg a, Gcc.Cons(encode_arg b, Gcc.Int Int32.zero)))
+        | Ghc.DIV(a,b) -> Gcc.Cons(Gcc.Int (Int32.of_int 6), 
+            Gcc.Cons(encode_arg a, Gcc.Cons(encode_arg b, Gcc.Int Int32.zero)))
+        | Ghc.AND(a,b) -> Gcc.Cons(Gcc.Int (Int32.of_int 7), 
+            Gcc.Cons(encode_arg a, Gcc.Cons(encode_arg b, Gcc.Int Int32.zero)))
+        | Ghc.OR(a,b) -> Gcc.Cons(Gcc.Int (Int32.of_int 8), 
+            Gcc.Cons(encode_arg a, Gcc.Cons(encode_arg b, Gcc.Int Int32.zero)))
+        | Ghc.XOR(a,b) -> Gcc.Cons(Gcc.Int (Int32.of_int 9), 
+            Gcc.Cons(encode_arg a, Gcc.Cons(encode_arg b, Gcc.Int Int32.zero)))
+        | Ghc.JLT(n,a,b) -> Gcc.Cons(Gcc.Int (Int32.of_int 10), 
+            Gcc.Cons(encode_int n, Gcc.Cons(encode_arg a, Gcc.Cons(encode_arg b, Gcc.Int Int32.zero))))
+        | Ghc.JEQ(n,a,b) -> Gcc.Cons(Gcc.Int (Int32.of_int 11), 
+            Gcc.Cons(encode_int n, Gcc.Cons(encode_arg a, Gcc.Cons(encode_arg b, Gcc.Int Int32.zero))))
+        | Ghc.JGT(n,a,b) -> Gcc.Cons(Gcc.Int (Int32.of_int 12), 
+            Gcc.Cons(encode_int n, Gcc.Cons(encode_arg a, Gcc.Cons(encode_arg b, Gcc.Int Int32.zero))))
+        | Ghc.INT n -> Gcc.Cons(Gcc.Int (Int32.of_int 13),  
+            Gcc.Cons(encode_int n, Gcc.Int Int32.zero))
+        | Ghc.HLT -> Gcc.Cons(Gcc.Int (Int32.of_int 14),  Gcc.Int Int32.zero)
+        in gcccode := Gcc.Cons(gccinstr, !gcccode)
     done;
     !gcccode
 
 let encode_ghosts_code ghosts_code =
-    let gccgc = ref (Gccsim.Int Int32.zero) in
+    let gccgc = ref (Gcc.Int Int32.zero) in
     for i = Array.length ghosts_code - 1 downto 0 do
         let g = ghosts_code.(i) in
-        gccgc := Gccsim.Cons(encode_ghost_code g, !gccgc)
+        gccgc := Gcc.Cons(encode_ghost_code g, !gccgc)
     done;
     !gccgc
 
 let encode_world () =
-    let gccmap = ref (Gccsim.Int Int32.zero) in
+    let gccmap = ref (Gcc.Int Int32.zero) in
     for y = Array.length !map - 1 downto 0 do
-        let line = ref (Gccsim.Int Int32.zero) in
+        let line = ref (Gcc.Int Int32.zero) in
         for x = Array.length !map.(0) - 1 downto 0 do
             let c = Common.int_of_cell !map.(y).(x) in
-            line := Gccsim.Cons(Gccsim.Int (Int32.of_int c), !line)
+            line := Gcc.Cons(Gcc.Int (Int32.of_int c), !line)
         done;
-        gccmap := Gccsim.Cons(!line, !gccmap)
+        gccmap := Gcc.Cons(!line, !gccmap)
     done;
 
-    let gcclam = Gccsim.Cons(Gccsim.Int (Int32.of_int (if lambdaman.vit > 0
+    let gcclam = Gcc.Cons(Gcc.Int (Int32.of_int (if lambdaman.vit > 0
                 then lambdaman.vit - !tickcount else 0)),
-        Gccsim.Cons(Gccsim.Cons(Gccsim.Int (Int32.of_int lambdaman.pos.x),
-            Gccsim.Int (Int32.of_int lambdaman.pos.y)),
-        Gccsim.Cons(Gccsim.Int (Int32.of_int (Common.int_of_dir lambdaman.dir)),
-        Gccsim.Cons(Gccsim.Int (Int32.of_int lambdaman.lives),
-        Gccsim.Int (Int32.of_int lambdaman.score))))) in
+        Gcc.Cons(Gcc.Cons(Gcc.Int (Int32.of_int lambdaman.pos.x),
+            Gcc.Int (Int32.of_int lambdaman.pos.y)),
+        Gcc.Cons(Gcc.Int (Int32.of_int (Common.int_of_dir lambdaman.dir)),
+        Gcc.Cons(Gcc.Int (Int32.of_int lambdaman.lives),
+        Gcc.Int (Int32.of_int lambdaman.score))))) in
 
-    let gccghs = ref (Gccsim.Int Int32.zero) in
+    let gccghs = ref (Gcc.Int Int32.zero) in
     for i = Array.length !ghosts - 1 downto 0 do
         let g = !ghosts.(i) in
-        let gccgh = Gccsim.Cons(Gccsim.Int (Int32.of_int (Ghcsim.int_of_vit
+        let gccgh = Gcc.Cons(Gcc.Int (Int32.of_int (Ghcsim.int_of_vit
         g.Ghcsim.vit)),
-        Gccsim.Cons(Gccsim.Cons(Gccsim.Int (Int32.of_int g.Ghcsim.pos.x),
-            Gccsim.Int (Int32.of_int g.Ghcsim.pos.y)),
-        Gccsim.Int (Int32.of_int (Common.int_of_dir g.Ghcsim.dir)))) in
-        gccghs := Gccsim.Cons( gccgh, !gccghs )
+        Gcc.Cons(Gcc.Cons(Gcc.Int (Int32.of_int g.Ghcsim.pos.x),
+            Gcc.Int (Int32.of_int g.Ghcsim.pos.y)),
+        Gcc.Int (Int32.of_int (Common.int_of_dir g.Ghcsim.dir)))) in
+        gccghs := Gcc.Cons( gccgh, !gccghs )
     done;
 
-    let gccfruit = Gccsim.Int (Int32.of_int (if !fruit > 0 then !fruit -
+    let gccfruit = Gcc.Int (Int32.of_int (if !fruit > 0 then !fruit -
     !tickcount else 0)) in
 
-    Gccsim.Cons( !gccmap, Gccsim.Cons( gcclam, Gccsim.Cons( !gccghs, gccfruit)))
+    Gcc.Cons( !gccmap, Gcc.Cons( gcclam, Gcc.Cons( !gccghs, gccfruit)))
 
 let load_matrix_from_data f frame_data off mapX mapY =
     let map = Array.make mapY [||] in
@@ -618,12 +618,16 @@ let run_sim map ghosts_code lambdaman_code =
             (* Gccsim.dump_machine lambdaman.mac; *)
             (* raise e *)
         end
-    | GameEnded -> ()
+    | GameEnded -> () (* 
+    ;
+        Printf.printf "Score :%d Lives:%d (tickcount : %d, max cycle : %d)\n" lambdaman.score
+        lambdaman.lives
+        !tickcount !cyclemax;
+        Hashtbl.iter 
+            (fun  m i  -> Printf.printf "%s,%d\n" m i)
+        Gccsim.profiling
+        *)
     | e -> trace_error () ;
          (* raise e *)
         (* Gccsim.dump_machine lambdaman.mac; *)
-        (* Printf.printf "Score :%d Lives:%d (tickcount : %d, max cycle : %d)\n" lambdaman.score
-        lambdaman.lives
-        !tickcount !cyclemax;
-        *)
 
