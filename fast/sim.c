@@ -168,7 +168,7 @@ ghc_instr read_ghc_instr(FILE *f)
 
     skip_space(f);
 
-    while ( (c = fgetc(f)) != ' ' && c != '\t' && c != '\n' && c != EOF )
+    while ( (c = fgetc(f)) != ' ' && c != '\t' && c != '\n' && c != '\r' && c != EOF )
     {
         mnemo[p++] = toupper(c);
     }
@@ -235,7 +235,7 @@ ghc_instr read_ghc_instr(FILE *f)
 
     if (instr_type == GHC_HLT) skip_space(f);
 
-    if (instr_type == GHC_ERROR) instr_type = GHC_OTHER;
+    //if (instr_type == GHC_ERROR) instr_type = GHC_OTHER;
 
     instr.instr = instr_type;
 
@@ -312,8 +312,10 @@ typedef struct {
     unsigned int retain;
     int value;
     unsigned int unused;
-    //unsigned int unused2;
-    //unsigned int unused3;
+#ifdef __amd64__
+    unsigned int unused2;
+    unsigned int unused3;
+#endif
 } gcc_data;
 
 typedef gcc_data* gcc_data_ptr;
@@ -415,7 +417,7 @@ void print_gcc_data(gcc_data_ptr d)
     print_gcc_data_depth(d, 0);
 }
 
-#define STACK_SIZE 100000
+#define STACK_SIZE 1000000
 
 #define GCC_CONTROL_RETURN 0
 #define GCC_CONTROL_STOP 1
@@ -732,7 +734,7 @@ gcc_instr read_gcc_instr(FILE *f)
 
     skip_space(f);
 
-    while ( (c = fgetc(f)) != ' ' && c != '\t' && c != '\n' && c != EOF )
+    while ( (c = fgetc(f)) != ' ' && c != '\t' && c != '\n' && c != '\r' && c != EOF )
     {
         mnemo[p++] = toupper(c);
     }
@@ -758,7 +760,7 @@ gcc_instr read_gcc_instr(FILE *f)
     if (strcmp(mnemo,"AP") == 0) { instr_type = GCC_AP; }
     if (strcmp(mnemo,"RTN") == 0) { instr_type = GCC_RTN; }
     if (strcmp(mnemo,"DUM") == 0) { instr_type = GCC_DUM; }
-    if (strcmp(mnemo,"RAP") == 0) { instr_type = GCC_TRAP; }
+    if (strcmp(mnemo,"RAP") == 0) { instr_type = GCC_RAP; }
     if (strcmp(mnemo,"TSEL") == 0) { instr_type = GCC_TSEL; }
     if (strcmp(mnemo,"TAP") == 0) { instr_type = GCC_TAP; }
     if (strcmp(mnemo,"TRAP") == 0) { instr_type = GCC_TRAP; }
@@ -791,6 +793,10 @@ gcc_instr read_gcc_instr(FILE *f)
         instr.arg1 = read_int_arg(f);
     }
 
+    if (instr_type == GCC_ERROR) {
+        printf("ERROR Unknown instruction type : %s\n", mnemo);
+    }
+
     skip_space(f);
 
     instr.instr = instr_type;
@@ -802,6 +808,7 @@ gcc_instr *load_gcc(char *fn)
 {
     FILE *f = fopen(fn, "r");
     int codesize = 1;
+
     char c;
     while ( (c = fgetc(f)) != EOF )
     {
@@ -819,6 +826,7 @@ gcc_instr *load_gcc(char *fn)
         c = fgetc(f);
         if (c == ';') { while( (c = fgetc(f)) != EOF && c != '\n' ); }
         if (c == EOF) break;
+        if (c == '\r') { c = fgetc(f); }
         if (c == '\n') continue;
 
         ungetc(c,f);
@@ -826,6 +834,7 @@ gcc_instr *load_gcc(char *fn)
         code[i] = read_gcc_instr(f);
 
         if (code[i].instr == GCC_ERROR) {
+            printf("Error reading instruction %d.\n", i);
             free(code);
             code = NULL;
             break;
@@ -1130,6 +1139,12 @@ gcc_data_ptr encode_world()
 #define GCC_RESULT_FRAME_MISMATCH 4
 #define GCC_RESULT_ERROR 5
 
+char *gcc_error_strings[] = {
+    "running", "stopped", "TAG MISMATCH",
+    "CONTROL MISMATCH", "FRAME MISMATCH",
+    "UNKNOWN ERROR"
+};
+
 unsigned char gcc_eval_res;
 
 gcc_control control_pop()
@@ -1252,6 +1267,10 @@ void gcc_eval_one()
         mac->pc = x->value == 0 ? i.arg2 : i.arg1;
         break; }
     case GCC_JOIN: { gcc_control c = control_pop();
+        if (c.type != GCC_CONTROL_JOIN) {
+            gcc_eval_res = GCC_RESULT_CONTROL_MISMATCH;
+            return;
+        }
         mac->pc = c.address;
         break; }
     case GCC_LDF: {
@@ -1276,6 +1295,7 @@ void gcc_eval_one()
             mac->frame = c.frame;
             mac->pc = c.address;
         } else {
+            control_push(c);
             gcc_eval_res = GCC_RESULT_CONTROL_MISMATCH;
         }
         break;}
@@ -1497,11 +1517,13 @@ gcc_cons *gcc_step(gcc_data_ptr state, gcc_closure *step_closure)
 
     gcc_eval_res = GCC_RESULT_RUNNING;
     int cycle = 0;
-    while (gcc_eval_res == GCC_RESULT_RUNNING)
+    while (cycle < 3072000 && gcc_eval_res == GCC_RESULT_RUNNING)
     {
         gcc_eval_one();
         cycle++;
     }
+
+    if (cycle == 3072000) gcc_eval_res = GCC_RESULT_ERROR;
 
     if (gcc_eval_res == GCC_RESULT_STOP)
         return data_cons_pop();
@@ -1522,11 +1544,21 @@ int main(int argc, char **argv)
 
     load_map(argv[1]);
     gcc_instr *lambdaman_code = load_gcc(argv[2]);
+
+    if (!lambdaman_code) {
+        printf("The file %s is not a valid GCC file\n", argv[2]);
+        return 1;
+    }
     nghosts_codes = argc - 3;
     ghosts_codes = (ghc_instr **)malloc(sizeof(ghc_instr *) * nghosts_codes);
     ghosts_codes_size = (int *)malloc(sizeof(int) * nghosts_codes);
-    for (int i = 0; i < nghosts_codes; i++)
+    for (int i = 0; i < nghosts_codes; i++) {
         ghosts_codes[i] = load_ghc(argv[3+i], &ghosts_codes_size[i]);
+        if (!ghosts_codes[i]) {
+            printf("The file %s is not a valid GHC file\n", argv[3+i]);
+            return 1;
+        }
+    }
 
     nghosts = 0;
     for (int x = 0; x < map_width; x++)
@@ -1581,14 +1613,19 @@ int main(int argc, char **argv)
             gcc_cons *step_res = gcc_step(state, step_closure);
             unsigned int dir = lambdaman.dir;
                 
+            lambdaman_updates++;
+
             if (step_res) {
                 state = step_res->car;
                 dir = step_res->cdr->value;
+            } else {
+                printf("Lambdaman raised an error (%s) on the %d call to step (tick %d).\n",
+                        gcc_error_strings[gcc_eval_res], lambdaman_updates, tickcount);
+                print_gcc_machine();
             }
 
             //if (lambdaman_updates % 100 == 0)
             //    printf("Update %d\n", lambdaman_updates);
-            lambdaman_updates++;
 
 
             int x = ADVANCEX(lambdaman.x, dir);
