@@ -1197,7 +1197,7 @@ void gcc_eval_one()
 {
     gcc_machine *mac = &lambdaman.mac;
     gcc_instr i = mac->code[mac->pc];
-    unsigned int old_pc = mac->pc;
+    unsigned int jump = 0;
 
     /*
     printf("%d || %s %d %d\n", mac->pc, gcc_mnemo[i.instr], i.arg1, i.arg2);
@@ -1265,6 +1265,7 @@ void gcc_eval_one()
     case GCC_SEL: { gcc_data_ptr x = data_pop();
         control_push((gcc_control){ GCC_CONTROL_JOIN, mac->pc+1, 0 });
         mac->pc = x->value == 0 ? i.arg2 : i.arg1;
+        jump = 1;
         break; }
     case GCC_JOIN: { gcc_control c = control_pop();
         if (c.type != GCC_CONTROL_JOIN) {
@@ -1272,6 +1273,7 @@ void gcc_eval_one()
             return;
         }
         mac->pc = c.address;
+        jump = 1;
         break; }
     case GCC_LDF: {
         data_push(gcc_make_closure(i.arg1, mac->frame));
@@ -1285,6 +1287,7 @@ void gcc_eval_one()
         control_push((gcc_control){ GCC_CONTROL_RETURN, mac->pc+1, mac->frame });
         mac->frame = f;
         mac->pc = c->address;
+        jump = 1;
         break;
     }
     case GCC_RTN: {
@@ -1294,6 +1297,7 @@ void gcc_eval_one()
         } else if (c.type == GCC_CONTROL_RETURN) {
             mac->frame = c.frame;
             mac->pc = c.address;
+            jump = 1;
         } else {
             control_push(c);
             gcc_eval_res = GCC_RESULT_CONTROL_MISMATCH;
@@ -1318,9 +1322,11 @@ void gcc_eval_one()
         f->dummy = 0;
         mac->frame = f;
         mac->pc = c->address;
+        jump = 1;
         break;}
     case GCC_TSEL: { gcc_data_ptr x = data_pop();
         mac->pc = x->value == 0 ? i.arg2 : i.arg1;
+        jump = 1;
         break; }
     case GCC_TAP: { gcc_closure *c = data_closure_pop();
         gcc_frame *f = alloc_frame(c->frame, i.arg1, 0);
@@ -1330,6 +1336,7 @@ void gcc_eval_one()
         }
         mac->frame = f;
         mac->pc = c->address;
+        jump = 1;
         break;}
     case GCC_TRAP: { gcc_closure *c = data_closure_pop();
         gcc_frame *f = c->frame;
@@ -1344,6 +1351,7 @@ void gcc_eval_one()
         f->dummy = 0;
         mac->frame = f;
         mac->pc = c->address;
+        jump = 1;
         break;
     }
     case GCC_ST: {
@@ -1368,7 +1376,7 @@ void gcc_eval_one()
         break;
     }
 
-    if (mac->pc == old_pc) mac->pc++;
+    if (jump == 0) mac->pc++;
 
     if ( (free_data_stack_top - free_data_stack < DATA_POOL_SIZE / 5)
         || (free_frame_stack_top - free_frame_stack < FRAME_POOL_SIZE / 5))
@@ -1469,8 +1477,6 @@ void gcc_sweep()
 
 void gcc_markandsweep()
 {
-    //printf("Markandsweep %d\n", tickcount);
-    //fflush(stdout);
     gcc_mark();
     gcc_sweep();
 }
@@ -1624,9 +1630,7 @@ int main(int argc, char **argv)
                 print_gcc_machine();
             }
 
-            //if (lambdaman_updates % 100 == 0)
-            //    printf("Update %d\n", lambdaman_updates);
-
+            //printf("Update %d\n", lambdaman_updates);
 
             int x = ADVANCEX(lambdaman.x, dir);
             int y = ADVANCEY(lambdaman.y, dir);
