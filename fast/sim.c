@@ -242,7 +242,7 @@ ghc_instr read_ghc_instr(FILE *f)
     return instr;
 }
 
-ghc_instr *load_ghc(char *fn)
+ghc_instr *load_ghc(char *fn, int *length)
 {
     FILE *f = fopen(fn, "r");
 
@@ -277,6 +277,8 @@ ghc_instr *load_ghc(char *fn)
 
     fclose(f);
 
+    *length = i;
+
     return code;
 }
 
@@ -300,31 +302,40 @@ typedef struct {
 #define ADVANCEY(y,d) (y + ((d+1) % 2) * (2 * (d / 2) - 1))
 
 /* Ugly hack by making everyone of the same size and 32bit aligned */
-#define GCC_DATA_INT 0
-#define GCC_DATA_CONS 1
-#define GCC_DATA_CLOSURE 2
+#define GCC_DATA_ERROR 0
+#define GCC_DATA_INT 1
+#define GCC_DATA_CONS 2
+#define GCC_DATA_CLOSURE 3
 
 typedef struct {
     unsigned int type;
+    unsigned int retain;
     int value;
     unsigned int unused;
+    //unsigned int unused2;
+    //unsigned int unused3;
 } gcc_data;
+
+typedef gcc_data* gcc_data_ptr;
 
 typedef struct {
     unsigned int type;
-    gcc_data *car;
-    gcc_data *cdr;
+    unsigned int retain;
+    gcc_data_ptr car;
+    gcc_data_ptr cdr;
 } gcc_cons;
 
 typedef struct gcc_frame_ {
     struct gcc_frame_ *parent;
     unsigned int size;
-    gcc_data *locals;
+    gcc_data_ptr *locals;
     unsigned char dummy;
+    unsigned int retain;
 }  gcc_frame;
 
 typedef struct {
     unsigned int type;
+    unsigned int retain;
     unsigned int address;
     gcc_frame *frame;
 } gcc_closure;
@@ -335,26 +346,73 @@ typedef struct {
     int arg2;
 } gcc_instr;
 
-gcc_cons to_cons(gcc_data d)
+gcc_cons *to_cons(gcc_data_ptr d)
 {
-    return *((gcc_cons*)&d);
+    return ((gcc_cons*)d);
 }
 
-void print_gcc_data(gcc_data d)
+gcc_data *data_pool;
+#define DATA_POOL_SIZE 10000000
+gcc_data_ptr *free_data_stack;
+gcc_data_ptr *free_data_stack_top;
+
+#define FRAME_POOL_SIZE 1000000
+gcc_frame *frame_pool;
+gcc_frame **free_frame_stack;
+gcc_frame **free_frame_stack_top;
+
+void init_data_pool()
 {
-    if (d.type == GCC_DATA_INT)
-        printf("%d", d.value);
-    else if (d.type == GCC_DATA_CONS) {
-        gcc_cons c = to_cons(d);
+    data_pool = (gcc_data *) malloc( sizeof(gcc_data) * DATA_POOL_SIZE );
+    free_data_stack = (gcc_data_ptr *) malloc( sizeof(gcc_data_ptr) * DATA_POOL_SIZE );
+    for (int i = 0; i < DATA_POOL_SIZE; i++)
+    {
+        free_data_stack[i] = data_pool + i;
+        free_data_stack[i]->type = GCC_DATA_ERROR;
+        free_data_stack[i]->value = 0;
+        free_data_stack[i]->unused = 0;
+        free_data_stack[i]->retain = 0;
+    }
+    free_data_stack_top = free_data_stack + DATA_POOL_SIZE;
+
+    frame_pool = (gcc_frame *) malloc( sizeof(gcc_frame) * FRAME_POOL_SIZE );
+    free_frame_stack = (gcc_frame **)malloc(sizeof(gcc_frame *) * FRAME_POOL_SIZE);
+    for (int i = 0; i < FRAME_POOL_SIZE; i++)
+    {
+        free_frame_stack[i] = frame_pool + i;
+        free_frame_stack[i]->retain = 0;
+        free_frame_stack[i]->dummy = 0;
+        free_frame_stack[i]->size = 0;
+        free_frame_stack[i]->parent = NULL;
+        free_frame_stack[i]->locals = NULL;
+    }
+    free_frame_stack_top = free_frame_stack + FRAME_POOL_SIZE;
+}
+
+void print_gcc_data_depth(gcc_data_ptr d, int depth)
+{
+    if (depth > 3) {
+        printf("_");
+        return;
+    }
+    if (d->type == GCC_DATA_INT)
+        printf("%d", d->value);
+    else if (d->type == GCC_DATA_CONS) {
+        gcc_cons *c = to_cons(d);
         putchar('(');
-        print_gcc_data(*c.car);
+        print_gcc_data_depth(c->car,depth+1);
         putchar(',');
-        print_gcc_data(*c.cdr);
+        print_gcc_data_depth(c->cdr,depth+1);
         putchar(')');
     } else {
-        gcc_closure c = *((gcc_closure*)&d);
-        printf("<%d,env>", c.address);
+        gcc_closure *c = (gcc_closure*)d;
+        printf("<%d,env>", c->address);
     }
+}
+
+void print_gcc_data(gcc_data_ptr d)
+{
+    print_gcc_data_depth(d, 0);
 }
 
 #define STACK_SIZE 100000
@@ -381,8 +439,8 @@ void print_gcc_control(gcc_control c)
 
 typedef struct {
     unsigned int pc;
-    gcc_data *data_stack;
-    gcc_data *data_stack_top;
+    gcc_data_ptr *data_stack;
+    gcc_data_ptr *data_stack_top;
     gcc_control *control_stack;
     gcc_control *control_stack_top;
     gcc_frame *frame;
@@ -404,12 +462,31 @@ typedef struct {
 
 lambdaman_t lambdaman;
 
+void print_gcc_frame(gcc_frame *f)
+{
+    if (f->dummy == 1) {
+        printf("dummy ");
+    } else {
+        printf("{ ");
+        for (int i = 0; i < f->size; i++)
+        {
+            print_gcc_data(f->locals[i]);
+            putchar(' ');
+        }
+        printf("} ");
+    }
+    if (f->parent) {
+        printf("-> ");
+        print_gcc_frame(f->parent);
+    }
+}
+
 void print_gcc_machine()
 {
     gcc_machine *mac = &lambdaman.mac;
     printf("PC : %d\n", mac->pc);
     printf("Data stack : ");
-    gcc_data *d = mac->data_stack;
+    gcc_data_ptr *d = mac->data_stack;
     while (d != mac->data_stack_top) {
         d--;
         print_gcc_data(*d);
@@ -424,16 +501,10 @@ void print_gcc_machine()
         if (c != mac->control_stack_top) putchar(' ');
     }
     putchar('\n');
-    printf("Frames : [ ");
-    for (int i = 0; i < mac->frame->size; i++)
-    {
-        print_gcc_data(mac->frame->locals[i]);
-        putchar(' ');
-    }
-    printf("]\n\n");
+    printf("Frames : ");
+    print_gcc_frame(mac->frame);
+    printf("\n\n");
 }
-
-
 
 typedef struct {
     unsigned char vit;
@@ -551,7 +622,6 @@ void ghost_eval_one_instr(unsigned char ghost_index)
             break;
         }
         case 8: break;
-        default: ghost_eval_res = GHOST_RESULT_ERROR;
         }
     };
     break;
@@ -641,6 +711,15 @@ int ghost_legal(ghost *g, int nfree, int dir)
 #define GCC_OTHER 128
 #define GCC_ERROR 129
 
+char * gcc_mnemo[] = {
+    "LDC", "LD", "ADD", "SUB", "MUL",
+    "DIV", "CEQ", "CGT", "CGTE", "ATOM",
+    "CONS", "CAR", "CDR", "SEL", "JOIN",
+    "LFD", "AP", "RTN", "DUM", "RAP",
+    "TSEL", "TAP", "TRAP", "ST", "STOP",
+    "DBUG", "BRK"
+    };
+
 gcc_instr read_gcc_instr(FILE *f)
 {
     gcc_instr instr;
@@ -648,6 +727,8 @@ gcc_instr read_gcc_instr(FILE *f)
     char c = 0;
     unsigned char p = 0;
     unsigned char instr_type = GCC_ERROR;
+    instr.arg1 = 0;
+    instr.arg2 = 0;
 
     skip_space(f);
 
@@ -760,62 +841,257 @@ gcc_instr *load_gcc(char *fn)
     return code;
 }
 
-gcc_data gcc_make_int(int n)
+gcc_data_ptr alloc_data()
 {
-    gcc_data g;
-    g.type = GCC_DATA_INT;
-    g.value = n;
+    assert(free_data_stack_top != free_data_stack);
+    gcc_data_ptr d = *(--free_data_stack_top);
+    assert(d->retain == 0);
+    return d;
+}
+
+void free_data_rec(gcc_data_ptr d)
+{
+    return;
+    //printf("Releasing %x (%d)\n", d, d->retain);
+
+    assert(d >= data_pool && d < data_pool + DATA_POOL_SIZE);
+    assert(free_data_stack_top != free_data_stack + DATA_POOL_SIZE);
+    assert(d->retain > 0);
+
+    d->retain--;
+    if (d->retain == 0) *(free_data_stack_top++) = d;
+    if (d->type == GCC_DATA_CONS) {
+        gcc_cons *c = (gcc_cons *) d;
+        free_data_rec(c->car);
+        free_data_rec(c->cdr);
+    }
+}
+
+void free_data(gcc_data_ptr d)
+{
+    return;
+    //printf("Releasing %x (%d)\n", d, d->retain);
+
+    assert(d >= data_pool && d < data_pool + DATA_POOL_SIZE);
+    assert(free_data_stack_top != free_data_stack + DATA_POOL_SIZE);
+    assert(d->retain > 0);
+
+    d->retain--;
+    if (d->retain == 0) *(free_data_stack_top++) = d;
+}
+
+void retain_data_rec(gcc_data_ptr d)
+{
+    return;
+    //printf("Retaining %x (%d)\n", d, d->retain);
+    d->retain++;
+    if (d->type == GCC_DATA_CONS) {
+        gcc_cons *c = (gcc_cons *) d;
+        retain_data_rec(c->car);
+        retain_data_rec(c->cdr);
+    }
+}
+
+gcc_data_ptr gcc_make_int(int n)
+{
+    gcc_data_ptr g = alloc_data();
+    g->type = GCC_DATA_INT;
+    g->value = n;
+    g->unused = 0;
+    //g->retain = 1;
     return g;
 }
 
-gcc_data gcc_make_cons(gcc_data car, gcc_data cdr)
+gcc_data_ptr gcc_make_cons(gcc_data_ptr car, gcc_data_ptr cdr)
 {
-    gcc_cons g;
-    g.type = GCC_DATA_CONS;
-    g.car = (gcc_data*) malloc(sizeof(gcc_data));
-    *g.car = car;
-    g.cdr = (gcc_data*) malloc(sizeof(gcc_data));
-    *g.cdr = cdr;
+    gcc_cons *g = (gcc_cons *)alloc_data();
+    g->type = GCC_DATA_CONS;
+    g->car = car;
+    g->cdr = cdr;
+    /*
+     * car and cdr delegates ownership to the cons cell
+    g->car->retain++;
+    g->cdr->retain++; */
+    //g->retain = 1;
 
-    return *((gcc_data*) &g);
+    return (gcc_data_ptr) g;
 }
 
-gcc_data gcc_make_closure(unsigned int address, gcc_frame *frame)
+gcc_data_ptr gcc_make_closure(unsigned int address, gcc_frame *frame)
 {
-    gcc_closure c;
-    c.type = GCC_DATA_CLOSURE;
-    c.address = address;
-    c.frame = frame;
+    gcc_closure *c = (gcc_closure *)alloc_data();
+    c->type = GCC_DATA_CLOSURE;
+    c->address = address;
+    c->frame = frame;
+    c->frame->retain++;
+    //c->retain = 1;
 
-    return *((gcc_data*)&c);
+    return (gcc_data_ptr) c;
 }
+
 
 gcc_frame *alloc_frame(gcc_frame *parent, unsigned int size, unsigned char dummy)
 {
-    gcc_frame *f = (gcc_frame*)malloc(sizeof(gcc_frame));
+    assert(free_frame_stack_top != free_frame_stack);
+    gcc_frame *f = *(--free_frame_stack_top);
+    assert(f->retain == 0);
+
     f->size = size;
-    f->locals = (gcc_data*)malloc(sizeof(gcc_data) * size);
+    if (size > 0)
+        f->locals = (gcc_data_ptr *)malloc(sizeof(gcc_data_ptr) * size);
+    else
+        f->locals = NULL;
     f->dummy = dummy;
     f->parent = parent;
+    f->retain = 1;
+
     return f;
 }
 
-gcc_data encode_world()
+void free_frame(gcc_frame *frame)
 {
-    gcc_data gcc_world;
+    //printf("Freeing frame %x (%d)\n", frame, frame->retain);
+    //frame->retain--;
+    /*
+    if (frame->retain == 0) {
+        free(frame->locals);
+        free(frame);
+    }
+    */
+}
 
-    gcc_data gcc_map;
+gcc_data_ptr encode_arg(ghc_arg a)
+{
+    return gcc_make_cons(
+            gcc_make_int(a.type),
+            gcc_make_int(a.value)
+            );
+}
+
+gcc_data_ptr encode_ghc_3args(ghc_instr i)
+{
+    return gcc_make_cons(
+            gcc_make_int(i.instr),
+            gcc_make_cons(
+                gcc_make_int(i.extra),
+                gcc_make_cons(
+                    encode_arg(i.arg1),
+                    gcc_make_cons(
+                        encode_arg(i.arg2),
+                        gcc_make_int(0)
+                        )
+                    )
+                )
+            );
+}
+
+gcc_data_ptr encode_ghc_2args(ghc_instr i)
+{
+    return gcc_make_cons(
+            gcc_make_int(i.instr),
+            gcc_make_cons(
+                encode_arg(i.arg1),
+                gcc_make_cons(
+                    encode_arg(i.arg2),
+                    gcc_make_int(0)
+                    )
+                )
+            );
+}
+
+gcc_data_ptr encode_ghc_1arg(ghc_instr i)
+{
+    return gcc_make_cons(
+            gcc_make_int(i.instr),
+            gcc_make_cons(
+                encode_arg(i.arg1),
+                gcc_make_int(0)
+                )
+            );
+}
+
+gcc_data_ptr encode_ghost_code(ghc_instr *code, int length)
+{
+    gcc_data_ptr gcc_code = gcc_make_int(0);
+
+    for (int i = length - 1; i >= 0; i--)
+    {
+        ghc_instr instr = code[i];
+        gcc_data_ptr gcc_instr;
+
+        switch (instr.instr)
+        {
+            case GHC_MOV:
+            case GHC_ADD:
+            case GHC_SUB:
+            case GHC_MUL:
+            case GHC_DIV:
+            case GHC_AND:
+            case GHC_OR:
+            case GHC_XOR:
+                gcc_instr = encode_ghc_2args(instr);
+                break;
+            case GHC_INC:
+            case GHC_DEC:
+                gcc_instr = encode_ghc_1arg(instr);
+                break;
+            case GHC_JLT:
+            case GHC_JEQ:
+            case GHC_JGT:
+                gcc_instr = encode_ghc_3args(instr);
+                break;
+            case GHC_INT:
+                gcc_instr = gcc_make_cons(
+                        gcc_make_int(instr.instr),
+                        gcc_make_cons(
+                            gcc_make_int(instr.extra),
+                            gcc_make_int(0)
+                            ));
+                break;
+            default:
+                gcc_instr = gcc_make_cons(
+                        gcc_make_int(instr.instr),
+                        gcc_make_int(0));
+        }
+
+        gcc_code = gcc_make_cons(gcc_instr, gcc_code);
+    }
+
+    return gcc_code;
+}
+
+int nghosts_codes;
+ghc_instr **ghosts_codes;
+int *ghosts_codes_size;
+
+gcc_data_ptr encode_ghost_codes()
+{
+    gcc_data_ptr gcc_codes = gcc_make_int(0);
+    for (int i = nghosts_codes-1; i >= 0; i--)
+    {
+        gcc_codes = gcc_make_cons(
+                encode_ghost_code(ghosts_codes[i], ghosts_codes_size[i]),
+                gcc_codes);
+    }
+    return gcc_codes;
+}
+
+gcc_data_ptr encode_world()
+{
+    gcc_data_ptr gcc_world;
+
+    gcc_data_ptr gcc_map;
 
     gcc_map = gcc_make_int(0);
     for (int y = map_height-1; y >= 0; y--)
     {
-        gcc_data line = gcc_make_int(0);
+        gcc_data_ptr line = gcc_make_int(0);
         for (int x = map_width-1; x >= 0; x--)
             line = gcc_make_cons(gcc_make_int(map[x][y]), line);
         gcc_map = gcc_make_cons(line, gcc_map);
     }
 
-    gcc_data gcc_lambda = gcc_make_cons(
+    gcc_data_ptr gcc_lambda = gcc_make_cons(
             gcc_make_int (lambdaman.vit > 0 ? lambdaman.vit - tickcount : 0),
             gcc_make_cons(
                 gcc_make_cons(gcc_make_int(lambdaman.x),
@@ -824,11 +1100,11 @@ gcc_data encode_world()
                     gcc_make_cons(gcc_make_int(lambdaman.lives),
                                   gcc_make_int(lambdaman.score)))));
 
-    gcc_data gcc_ghosts = gcc_make_int(0);
+    gcc_data_ptr gcc_ghosts = gcc_make_int(0);
     for (int i = nghosts-1; i >= 0; i--)
     {
         ghost *g = &ghosts[i];
-        gcc_data gcc_ghost = gcc_make_cons(
+        gcc_data_ptr gcc_ghost = gcc_make_cons(
                 gcc_make_int(g->vit),
                 gcc_make_cons(
                     gcc_make_cons(gcc_make_int(g->x),
@@ -837,7 +1113,7 @@ gcc_data encode_world()
         gcc_ghosts = gcc_make_cons(gcc_ghost, gcc_ghosts); 
     }
 
-    gcc_data gcc_fruit = gcc_make_int(fruit > 0 ? fruit - tickcount : 0);
+    gcc_data_ptr gcc_fruit = gcc_make_int(fruit > 0 ? fruit - tickcount : 0);
 
     gcc_world = gcc_make_cons(
             gcc_map,
@@ -867,31 +1143,40 @@ void control_push(gcc_control data)
 }
 
 
-void data_push(gcc_data data)
+void data_push(gcc_data_ptr data)
 {
     *(lambdaman.mac.data_stack++)  = data;
 }
 
-gcc_data data_pop()
+gcc_data_ptr data_pop()
 {
-    gcc_data d = *(--lambdaman.mac.data_stack);
+    gcc_data_ptr d = *(--lambdaman.mac.data_stack);
     return d;
 }
 
-
-gcc_cons data_cons_pop()
+gcc_cons* data_cons_pop()
 {
-    gcc_data d = data_pop();
-    assert(d.type == GCC_DATA_CONS);
+    gcc_data_ptr d = data_pop();
+    if (d->type != GCC_DATA_CONS) {
+        gcc_eval_res = GCC_RESULT_TAG_MISMATCH;
+        return NULL;
+    }
     return to_cons(d);
 }
 
-gcc_closure data_closure_pop()
+gcc_closure * data_closure_pop()
 {
-    gcc_data d = data_pop();
-    assert(d.type == GCC_DATA_CLOSURE);
-    return *((gcc_closure*)(&d)); 
+    gcc_data_ptr d = data_pop();
+    if (d->type != GCC_DATA_CLOSURE) {
+        gcc_eval_res = GCC_RESULT_TAG_MISMATCH;
+        return NULL;
+    }
+    return (gcc_closure*)d; 
 }
+
+void gcc_markandsweep();
+void gcc_mark();
+void gcc_sweep();
 
 void gcc_eval_one()
 {
@@ -900,9 +1185,11 @@ void gcc_eval_one()
     unsigned int old_pc = mac->pc;
 
     /*
-    printf("%d || %d %d %d\n", mac->pc, i.instr, i.arg1, i.arg2);
+    printf("%d || %s %d %d\n", mac->pc, gcc_mnemo[i.instr], i.arg1, i.arg2);
+    print_gcc_machine();
     fflush(stdout);
     */
+
     switch(i.instr) {
     case GCC_LDC:
         data_push(gcc_make_int(i.arg1));
@@ -914,49 +1201,55 @@ void gcc_eval_one()
             f = f->parent;
             n--;
         }
+        //assert(f->size > i.arg2);
+        //assert(f->dummy == 0);
+        //assert(f->locals[i.arg2]->retain > 0);
         data_push(f->locals[i.arg2]);
+        //retain_data_rec(f->locals[i.arg2]);
+        //f->locals[i.arg2]->retain++;
         break;
     }
-    case GCC_ADD: { gcc_data b = data_pop(); gcc_data a = data_pop();
-        data_push((gcc_data){ GCC_DATA_INT, a.value + b.value, 0});
+    case GCC_ADD: { gcc_data_ptr b = data_pop(); gcc_data_ptr a = data_pop();
+        data_push(gcc_make_int(a->value + b->value));
         break;}
-    case GCC_SUB: { gcc_data b = data_pop(); gcc_data a = data_pop();
-        data_push((gcc_data){ GCC_DATA_INT, a.value - b.value, 0});
+    case GCC_SUB: { gcc_data_ptr b = data_pop(); gcc_data_ptr a = data_pop();
+        data_push(gcc_make_int(a->value - b->value));
         break;}
-    case GCC_MUL: { gcc_data b = data_pop(); gcc_data a = data_pop();
-        data_push((gcc_data){ GCC_DATA_INT, a.value * b.value, 0});
+    case GCC_MUL: { gcc_data_ptr b = data_pop(); gcc_data_ptr a = data_pop();
+        data_push(gcc_make_int(a->value * b->value));
         break;}
-    case GCC_DIV: { gcc_data b = data_pop(); gcc_data a = data_pop();
-        data_push((gcc_data){ GCC_DATA_INT, a.value / b.value, 0});
+    case GCC_DIV: { gcc_data_ptr b = data_pop(); gcc_data_ptr a = data_pop();
+        data_push(gcc_make_int(a->value / b->value));
         break;}
-    case GCC_CEQ: { gcc_data b = data_pop(); gcc_data a = data_pop();
-        data_push((gcc_data){ GCC_DATA_INT, a.value == b.value ? 1 : 0, 0});
+    case GCC_CEQ: { gcc_data_ptr b = data_pop(); gcc_data_ptr a = data_pop();
+        data_push(gcc_make_int(a->value == b->value ? 1 : 0));
         break;}
-    case GCC_CGT: { gcc_data b = data_pop(); gcc_data a = data_pop();
-        data_push((gcc_data){ GCC_DATA_INT, a.value > b.value ? 1 : 0, 0});
+    case GCC_CGT: { gcc_data_ptr b = data_pop(); gcc_data_ptr a = data_pop();
+        data_push(gcc_make_int(a->value > b->value ? 1 : 0));
         break;}
-    case GCC_CGTE: { gcc_data b = data_pop(); gcc_data a = data_pop();
-        data_push((gcc_data){ GCC_DATA_INT, a.value >= b.value ? 1 : 0, 0});
+    case GCC_CGTE: { gcc_data_ptr b = data_pop(); gcc_data_ptr a = data_pop();
+        data_push(gcc_make_int(a->value >= b->value ? 1 : 0));
         break;}
-    case GCC_ATOM: { gcc_data a = data_pop();
-        data_push((gcc_data){ GCC_DATA_INT, a.type == GCC_DATA_INT ? 1 : 0, 0});
+    case GCC_ATOM: { gcc_data_ptr a = data_pop();
+        data_push(gcc_make_int(a->type == GCC_DATA_INT ? 1 : 0));
         break;}
-    case GCC_CONS: { gcc_data b = data_pop();
-        gcc_data a = data_pop();
+    case GCC_CONS: {
+        gcc_data_ptr b = data_pop();
+        gcc_data_ptr a = data_pop();
         data_push(gcc_make_cons(a,b));
         break;
     }
-    case GCC_CAR: { gcc_cons a = data_cons_pop();
-        data_push(*a.car);
-        /* free(a.car);
-        free(a.cdr); TODO */
+    case GCC_CAR: { gcc_cons * a = data_cons_pop();
+        if (!a) return;
+        data_push(a->car);
         break;}
-    case GCC_CDR: { gcc_cons a = data_cons_pop();
-        data_push(*a.cdr);
+    case GCC_CDR: { gcc_cons * a = data_cons_pop();
+        if (!a) return;
+        data_push(a->cdr);
         break;}
-    case GCC_SEL: { gcc_data x = data_pop();
+    case GCC_SEL: { gcc_data_ptr x = data_pop();
         control_push((gcc_control){ GCC_CONTROL_JOIN, mac->pc+1, 0 });
-        mac->pc = x.value == 0 ? i.arg2 : i.arg1;
+        mac->pc = x->value == 0 ? i.arg2 : i.arg1;
         break; }
     case GCC_JOIN: { gcc_control c = control_pop();
         mac->pc = c.address;
@@ -964,15 +1257,15 @@ void gcc_eval_one()
     case GCC_LDF: {
         data_push(gcc_make_closure(i.arg1, mac->frame));
         break;}
-    case GCC_AP: { gcc_closure c = data_closure_pop();
-        gcc_frame *f = alloc_frame(c.frame, i.arg1, 0);
+    case GCC_AP: { gcc_closure *c = data_closure_pop();
+        gcc_frame *f = alloc_frame(c->frame, i.arg1, 0);
         for (int k = i.arg1-1; k >= 0; k--)
         {
             f->locals[k] = data_pop();
         }
         control_push((gcc_control){ GCC_CONTROL_RETURN, mac->pc+1, mac->frame });
         mac->frame = f;
-        mac->pc = c.address;
+        mac->pc = c->address;
         break;
     }
     case GCC_RTN: {
@@ -990,8 +1283,8 @@ void gcc_eval_one()
         gcc_frame * f = alloc_frame(mac->frame, i.arg1, 1);
         mac->frame = f;
         break;}
-    case GCC_RAP: { gcc_closure c = data_closure_pop();
-        gcc_frame *f = c.frame;
+    case GCC_RAP: { gcc_closure *c = data_closure_pop();
+        gcc_frame *f = c->frame;
         if (f->dummy != 1 || f->size != i.arg1 || f != mac->frame) {
             gcc_eval_res = GCC_RESULT_FRAME_MISMATCH;
             break;
@@ -1000,27 +1293,26 @@ void gcc_eval_one()
         {
             f->locals[k] = data_pop();
         }
+        if (f->parent) f->parent->retain++;
         control_push((gcc_control){ GCC_CONTROL_RETURN, mac->pc+1, f->parent });
         f->dummy = 0;
         mac->frame = f;
-        mac->pc = c.address;
-        break;
-    }
-    case GCC_TSEL: { gcc_data x = data_pop();
-        mac->pc = x.value == 0 ? i.arg2 : i.arg1;
+        mac->pc = c->address;
+        break;}
+    case GCC_TSEL: { gcc_data_ptr x = data_pop();
+        mac->pc = x->value == 0 ? i.arg2 : i.arg1;
         break; }
-    case GCC_TAP: { gcc_closure c = data_closure_pop();
-        gcc_frame *f = alloc_frame(c.frame, i.arg1, 0);
+    case GCC_TAP: { gcc_closure *c = data_closure_pop();
+        gcc_frame *f = alloc_frame(c->frame, i.arg1, 0);
         for (int k = i.arg1-1; k >= 0; k--)
         {
             f->locals[k] = data_pop();
         }
         mac->frame = f;
-        mac->pc = c.address;
-        break;
-    }
-    case GCC_TRAP: { gcc_closure c = data_closure_pop();
-        gcc_frame *f = c.frame;
+        mac->pc = c->address;
+        break;}
+    case GCC_TRAP: { gcc_closure *c = data_closure_pop();
+        gcc_frame *f = c->frame;
         if (f->dummy != 1 || f->size != i.arg1 || f != mac->frame) {
             gcc_eval_res = GCC_RESULT_FRAME_MISMATCH;
             break;
@@ -1031,7 +1323,7 @@ void gcc_eval_one()
         }
         f->dummy = 0;
         mac->frame = f;
-        mac->pc = c.address;
+        mac->pc = c->address;
         break;
     }
     case GCC_ST: {
@@ -1057,21 +1349,124 @@ void gcc_eval_one()
     }
 
     if (mac->pc == old_pc) mac->pc++;
+
+    if ( (free_data_stack_top - free_data_stack < DATA_POOL_SIZE / 5)
+        || (free_frame_stack_top - free_frame_stack < FRAME_POOL_SIZE / 5))
+        gcc_markandsweep();
 }
 
-gcc_cons gcc_main(gcc_instr *lambdaman_code)
+void mark_frame(gcc_frame *f);
+void mark(gcc_data_ptr d)
+{
+    if (d->retain != 0) return;
+    d->retain = 1;
+    if (d->type == GCC_DATA_CONS) {
+        gcc_cons *c = (gcc_cons *) d;
+        mark(c->car);
+        mark(c->cdr);
+    }
+    if (d->type == GCC_DATA_CLOSURE) {
+        gcc_closure *c = (gcc_closure *) d;
+        mark_frame(c->frame);
+    }
+}
+void mark_frame(gcc_frame *f)
+{
+    if (f->retain != 0) return;
+    f->retain = 1;
+    if (f->dummy == 0)
+    {
+        for (int i = 0; i < f->size; i++)
+        {
+            mark(f->locals[i]);
+        }
+    }
+    if (f->parent && f->parent != f) mark_frame(f->parent);
+}
+
+void mark_control(gcc_control *c)
+{
+    if (c->type == GCC_CONTROL_RETURN)
+        mark_frame(c->frame);
+}
+
+gcc_closure *step_closure = NULL;
+
+void gcc_mark()
+{
+    gcc_machine *mac = &lambdaman.mac;
+    for (int i = 0; i < DATA_POOL_SIZE; i++)
+    {
+        data_pool[i].retain=0;
+    }
+    for (int i = 0; i < FRAME_POOL_SIZE; i++)
+    {
+        frame_pool[i].retain=0;
+    }
+
+    gcc_data_ptr *d = mac->data_stack;
+    while (d != mac->data_stack_top) {
+        d--;
+        mark(*d);
+    }
+    gcc_control *c = mac->control_stack;
+    while (c != mac->control_stack_top) {
+        c--;
+        mark_control(c);
+    }
+    mark_frame(mac->frame);
+    if (step_closure != NULL)
+        step_closure->retain = 1;
+}
+
+void gcc_sweep()
+{
+    free_data_stack_top = free_data_stack;
+
+    for (int i = 0; i < DATA_POOL_SIZE; i++)
+    {
+        if (data_pool[i].retain != 0) continue;
+        *(free_data_stack_top++) = data_pool + i;
+        data_pool[i].type = GCC_DATA_ERROR;
+        data_pool[i].value = 0;
+        data_pool[i].unused = 0;
+        data_pool[i].retain = 0;
+    }
+
+    free_frame_stack_top = free_frame_stack;
+
+    for (int i = 0; i < FRAME_POOL_SIZE; i++)
+    {
+        if (frame_pool[i].retain != 0) continue;
+        if (frame_pool[i].size > 0)
+            free(frame_pool[i].locals);
+        frame_pool[i].retain = 0;
+        frame_pool[i].size = 0;
+        frame_pool[i].locals = NULL;
+        *(free_frame_stack_top++) = frame_pool + i;
+    }
+}
+
+void gcc_markandsweep()
+{
+    //printf("Markandsweep %d\n", tickcount);
+    //fflush(stdout);
+    gcc_mark();
+    gcc_sweep();
+}
+
+gcc_cons *gcc_main(gcc_instr *lambdaman_code)
 {
     gcc_machine *mac = &lambdaman.mac;
     mac->pc = 0;
     mac->code = lambdaman_code;
-    mac->data_stack = (gcc_data*)malloc(sizeof(gcc_data) * STACK_SIZE);
+    mac->data_stack = (gcc_data_ptr *)malloc(sizeof(gcc_data_ptr) * STACK_SIZE);
     mac->data_stack_top = mac->data_stack;
     mac->control_stack = (gcc_control*)malloc(sizeof(gcc_control) * STACK_SIZE);
     mac->control_stack_top = mac->control_stack;
     mac->frame = alloc_frame(NULL, 2, 0);
-    gcc_data world = encode_world();
-    mac->frame->locals[0] = world;
-    mac->frame->locals[1] = gcc_make_int(42);
+    mac->frame->locals[0] = encode_world();
+    mac->frame->locals[1] = encode_ghost_codes();
 
     control_push((gcc_control){ GCC_CONTROL_STOP, 0, 0 });
     gcc_eval_res = GCC_RESULT_RUNNING;
@@ -1080,54 +1475,58 @@ gcc_cons gcc_main(gcc_instr *lambdaman_code)
     {
         gcc_eval_one();
         cycle++;
-        /* printf("Instruction %d\n", cycle);
-        print_gcc_machine(); */
     }
 
-    return data_cons_pop();
+    if (gcc_eval_res == GCC_RESULT_STOP)
+        return data_cons_pop();
+    else
+        return NULL;
 }
 
-gcc_cons gcc_step(gcc_data state, gcc_closure step_closure)
+gcc_cons *gcc_step(gcc_data_ptr state, gcc_closure *step_closure)
 {
     gcc_machine *mac = &lambdaman.mac;
-    mac->pc = step_closure.address;
-    mac->frame = alloc_frame(step_closure.frame, 2, 0);
-    gcc_data world = encode_world();
+    mac->pc = step_closure->address;
+    mac->frame = alloc_frame(step_closure->frame, 2, 0);
+    gcc_data_ptr world = encode_world();
     mac->frame->locals[0] = state;
     mac->frame->locals[1] = world;
 
     control_push((gcc_control){ GCC_CONTROL_STOP, 0, 0 });
 
+
     gcc_eval_res = GCC_RESULT_RUNNING;
     int cycle = 0;
     while (gcc_eval_res == GCC_RESULT_RUNNING)
     {
         gcc_eval_one();
         cycle++;
-        /*
-        printf("Instruction %d\n", cycle);
-        print_gcc_machine();
-        */
     }
 
-    return data_cons_pop();
+    if (gcc_eval_res == GCC_RESULT_STOP)
+        return data_cons_pop();
+    else
+        return NULL;
 }
 
 
 int main(int argc, char **argv)
 {
-    if (sizeof(unsigned int *) != 4 || sizeof(gcc_data) != sizeof(gcc_cons) || sizeof(gcc_data) != sizeof(gcc_closure))
+    if (sizeof(gcc_data) != sizeof(gcc_cons) || sizeof(gcc_data) != sizeof(gcc_closure))
     {
         printf("This simulator MUST be compiled in 32 bits\n");
         return 1;
     }
 
+    init_data_pool();
+
     load_map(argv[1]);
     gcc_instr *lambdaman_code = load_gcc(argv[2]);
-    int nghosts_codes = argc - 3;
-    ghc_instr **ghosts_codes = (ghc_instr **)malloc(sizeof(ghc_instr *) * nghosts_codes);
+    nghosts_codes = argc - 3;
+    ghosts_codes = (ghc_instr **)malloc(sizeof(ghc_instr *) * nghosts_codes);
+    ghosts_codes_size = (int *)malloc(sizeof(int) * nghosts_codes);
     for (int i = 0; i < nghosts_codes; i++)
-        ghosts_codes[i] = load_ghc(argv[3+i]);
+        ghosts_codes[i] = load_ghc(argv[3+i], &ghosts_codes_size[i]);
 
     nghosts = 0;
     for (int x = 0; x < map_width; x++)
@@ -1170,20 +1569,27 @@ int main(int argc, char **argv)
     unsigned int fruit_scores[] = { 0, 100, 300, 500, 500, 700, 700, 1000, 1000, 2000, 2000, 3000, 3000, 5000 };
     unsigned int fruit_score = level <= 12 ? fruit_scores[level] : 5000;
 
-    gcc_cons main_res = gcc_main(lambdaman_code);
-    gcc_data state = *main_res.car;
-    gcc_closure step_closure = *((gcc_closure*)main_res.cdr);
-    free(main_res.car);
-    free(main_res.cdr);
+    gcc_cons *main_res = gcc_main(lambdaman_code);
+    gcc_data_ptr state = main_res->car;
+    step_closure = (gcc_closure*)main_res->cdr;
 
     unsigned char update = 0;
+    unsigned int lambdaman_updates = 0;
 
     while (1) {
         if (tickcount == lambdaman.tick) {
-            gcc_cons step_res = gcc_step(state, step_closure);
-            state = *step_res.car;
+            gcc_cons *step_res = gcc_step(state, step_closure);
+            unsigned int dir = lambdaman.dir;
+                
+            if (step_res) {
+                state = step_res->car;
+                dir = step_res->cdr->value;
+            }
 
-            unsigned int dir = step_res.cdr->value;
+            //if (lambdaman_updates % 100 == 0)
+            //    printf("Update %d\n", lambdaman_updates);
+            lambdaman_updates++;
+
 
             int x = ADVANCEX(lambdaman.x, dir);
             int y = ADVANCEY(lambdaman.y, dir);
@@ -1204,6 +1610,7 @@ int main(int argc, char **argv)
                 lambdaman.tick += TICK_LAMBDA_NORMAL;
 
             update = 1;
+            //printf("(%d,%d)", lambdaman.x, lambdaman.y);
         }
 
         for (unsigned char gi = 0; gi < nghosts; gi++) {
@@ -1373,6 +1780,8 @@ int main(int argc, char **argv)
         tickcount++;
         // if (tickcount > 500) break;
     }
+
+    free(data_pool);
 
     return 0;
 }
