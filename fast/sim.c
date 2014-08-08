@@ -1137,7 +1137,8 @@ gcc_data_ptr encode_world()
 #define GCC_RESULT_TAG_MISMATCH 2
 #define GCC_RESULT_CONTROL_MISMATCH 3
 #define GCC_RESULT_FRAME_MISMATCH 4
-#define GCC_RESULT_ERROR 5
+#define GCC_RESULT_CYCLE_EXCEEDED 5
+#define GCC_RESULT_ERROR 6
 
 char *gcc_error_strings[] = {
     "running", "stopped", "TAG MISMATCH",
@@ -1529,7 +1530,7 @@ gcc_cons *gcc_step(gcc_data_ptr state, gcc_closure *step_closure)
         cycle++;
     }
 
-    if (cycle == 3072000) gcc_eval_res = GCC_RESULT_ERROR;
+    if (cycle == 3072000) gcc_eval_res = GCC_RESULT_CYCLE_EXCEEDED;
 
     if (gcc_eval_res == GCC_RESULT_STOP)
         return data_cons_pop();
@@ -1619,7 +1620,11 @@ int main(int argc, char **argv)
             gcc_cons *step_res = gcc_step(state, step_closure);
             unsigned int dir = lambdaman.dir;
                 
+            /*
+             * if (lambdaman_updates % 100 == 0)
+                printf("Update %d\n", lambdaman_updates);
             lambdaman_updates++;
+            */
 
             if (step_res) {
                 state = step_res->car;
@@ -1627,10 +1632,9 @@ int main(int argc, char **argv)
             } else {
                 printf("Lambdaman raised an error (%s) on the %d call to step (tick %d).\n",
                         gcc_error_strings[gcc_eval_res], lambdaman_updates, tickcount);
-                print_gcc_machine();
+                //print_gcc_machine();
             }
 
-            //printf("Update %d\n", lambdaman_updates);
 
             int x = ADVANCEX(lambdaman.x, dir);
             int y = ADVANCEY(lambdaman.y, dir);
