@@ -1630,8 +1630,8 @@ int main(int argc, char **argv)
                 state = step_res->car;
                 dir = step_res->cdr->value;
             } else {
-                printf("Lambdaman raised an error (%s) on the %d call to step (tick %d).\n",
-                        gcc_error_strings[gcc_eval_res], lambdaman_updates, tickcount);
+                //printf("Lambdaman raised an error (%s) on the %d call to step (tick %d).\n",
+                //        gcc_error_strings[gcc_eval_res], lambdaman_updates, tickcount);
                 //print_gcc_machine();
             }
 
@@ -1790,7 +1790,7 @@ int main(int argc, char **argv)
             break;
         }
 
-        if (0 && update) {
+        if (0&&update) {
             printf("tickcount : %d score : %d\n", tickcount, lambdaman.score);
             for (int y = 0 ; y < map_height; y++)
             {
