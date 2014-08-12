@@ -1366,6 +1366,7 @@ void gcc_eval_one()
         break;
     }
     case GCC_DBUG:
+        data_pop();
         /*
         print_gcc_data(data_pop());
         putchar('\n');
