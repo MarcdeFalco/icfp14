@@ -642,30 +642,13 @@ void ghost_run(unsigned char ghost_index)
     ghc_machine *mac = &g->mac;
     g->target_dir = g->dir;
     mac->pc = 0;
+    
+    unsigned int cycle = 0;
 
-    while (ghost_eval_res == GHOST_RESULT_RUNNING)
+    while (cycle < 1024 && ghost_eval_res == GHOST_RESULT_RUNNING)
     {
-        /*
-        if (tickcount == 1040)
-            printf("-> ghost%d: %d A%d B%d C%d D%d E%d F%d G%d H%d []\n",
-                    ghost_index,
-                    mac->pc, mac->regs[0],
-                    mac->regs[1], mac->regs[2],
-                    mac->regs[3], mac->regs[4],
-                    mac->regs[5], mac->regs[6],
-                    mac->regs[7]);
-        */
         ghost_eval_one_instr(ghost_index);
-        /*
-        if (tickcount == 1040)
-            printf("<- ghost%d: %d A%d B%d C%d D%d E%d F%d G%d H%d []\n",
-                    ghost_index,
-                    mac->pc, mac->regs[0],
-                    mac->regs[1], mac->regs[2],
-                    mac->regs[3], mac->regs[4],
-                    mac->regs[5], mac->regs[6],
-                    mac->regs[7]);
-        */
+        cycle++;
     }
 
     if (ghost_eval_res == GHOST_RESULT_ERROR)
